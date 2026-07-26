@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { plainTextFromMoodleMessage } from "@/lib/security/html";
+
 import {
   ActivityModuleNameSchema,
   CapabilityStateSchema,
@@ -72,17 +74,39 @@ export const ActivityAdapterPayloadSchema = z.object({
   operations: z.array(ActivityOperationKeySchema).max(20),
   blocks: z.array(ActivityDisplayBlockSchema).max(100),
   activity: z.unknown().nullable().optional(),
-}).transform((wire) => ActivityAdapterPayloadModelSchema.parse({
-  contractVersion: wire.contractversion,
-  cmid: wire.cmid,
-  moduleName: wire.modulename,
-  source: wire.source,
-  title: wire.title,
-  state: wire.state,
-  operations: wire.operations,
-  blocks: wire.blocks,
-  activity: wire.activity ?? null,
-}));
+}).transform((wire) => {
+  const payload = ActivityAdapterPayloadModelSchema.parse({
+    contractVersion: wire.contractversion,
+    cmid: wire.cmid,
+    moduleName: wire.modulename,
+    source: wire.source,
+    title: wire.title,
+    state: wire.state,
+    operations: wire.operations,
+    blocks: wire.blocks,
+    activity: wire.activity ?? null,
+  });
+  if (payload.activity?.kind !== "questionnaire") return payload;
+  return {
+    ...payload,
+    activity: {
+      ...payload.activity,
+      questions: payload.activity.questions.map((question) => ({
+        ...question,
+        description: plainTextFromMoodleMessage(question.description),
+        label: plainTextFromMoodleMessage(question.label),
+        options: question.options.map((option) => ({
+          ...option,
+          label: plainTextFromMoodleMessage(option.label),
+        })),
+        rateOptions: question.rateOptions.map((option) => ({
+          ...option,
+          label: plainTextFromMoodleMessage(option.label),
+        })),
+      })),
+    },
+  };
+});
 export type ActivityAdapterPayload = Readonly<
   z.infer<typeof ActivityAdapterPayloadSchema>
 >;

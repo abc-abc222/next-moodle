@@ -3,7 +3,10 @@ import { describe, expect, test } from "bun:test";
 import { deriveCapabilityManifest } from "@/lib/moodle/capabilities";
 import { MOODLE_FUNCTIONS } from "@/lib/moodle/functions";
 import { resolveActivityAdapter } from "@/lib/moodle/activities/registry";
-import { CompanionManifestSchema } from "@/lib/moodle/activities/contracts";
+import {
+  ActivityAdapterPayloadSchema,
+  CompanionManifestSchema,
+} from "@/lib/moodle/activities/contracts";
 
 describe("activity adapter registry", () => {
   test("Given official quiz functions, When resolved, Then the quiz stays inside the workspace", () => {
@@ -86,6 +89,50 @@ describe("activity adapter registry", () => {
 
     expect(partial.replacementReady).toBe(false);
     expect(complete.replacementReady).toBe(true);
+  });
+
+  test("normalizes Moodle markup in Questionnaire labels before presentation", () => {
+    const payload = ActivityAdapterPayloadSchema.parse({
+      activity: {
+        kind: "questionnaire",
+        anonymous: false,
+        answers: [],
+        availableFrom: 0,
+        availableUntil: 0,
+        canSave: true,
+        canSubmit: true,
+        canViewResponses: false,
+        questions: [{
+          dependencies: [],
+          description: "<p>補足<br>2行目</p>",
+          id: 1,
+          kind: "radio",
+          label: "<p><strong>出席</strong>を選択</p>",
+          max: null,
+          min: null,
+          options: [{ label: "<p>出席</p>", value: "present" }],
+          rateOptions: [],
+          required: true,
+          step: null,
+        }],
+        responseId: 0,
+        status: "not_started",
+      },
+      blocks: [],
+      cmid: 1,
+      contractversion: 2,
+      modulename: "questionnaire",
+      operations: ["read", "save", "submit"],
+      source: "companion",
+      state: "available",
+      title: "出席確認",
+    });
+
+    expect(payload.activity?.kind).toBe("questionnaire");
+    if (payload.activity?.kind !== "questionnaire") return;
+    expect(payload.activity.questions[0]?.label).toBe("出席を選択");
+    expect(payload.activity.questions[0]?.description).toBe("補足\n2行目");
+    expect(payload.activity.questions[0]?.options[0]?.label).toBe("出席");
   });
 
   test("Given Moodle 4.5 forum functions, When capabilities are derived, Then forum reading is available", () => {

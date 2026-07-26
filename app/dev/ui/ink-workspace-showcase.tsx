@@ -130,8 +130,8 @@ export function EditorialNativeShowcase() {
         <ShowcaseSample label="Verified launch">
           <div className={styles.dashboardScreen}><header><strong>外部ツール</strong><span>公式API</span></header><p>起動方式<span>署名済みPOST</span></p><p>トークン<span>ブラウザへ非公開</span></p><p>状態<span>起動可能</span></p></div>
         </ShowcaseSample>
-        <ShowcaseSample label="Questionnaire form">
-          <div className={styles.formScreen}><header><strong>フィールドワーク準備</strong><span>下書き保存可</span></header><div className={styles.demoField}><span>安全案内を確認しましたか</span><i data-control="radio" />はい</div><div className={styles.demoField}><span>準備した機材</span><i data-control="check" />ノート</div><footer><button type="button">下書き保存</button><button type="button">回答を送信</button></footer></div>
+        <ShowcaseSample label="Questionnaire flow">
+          <div className={styles.formScreen}><header><strong>フィールドワーク準備</strong><span>下書き保存可</span></header><div className={styles.demoField}><span>安全案内を確認しましたか</span><i data-control="radio" />はい</div><div className={styles.demoField}><span>準備した機材</span><i data-control="check" />ノート</div><footer><button type="button">下書き保存</button><button type="button">回答を確認</button></footer></div>
         </ShowcaseSample>
         <ShowcaseSample label="Teacher contact">
           <div className={styles.composeScreen}><header><span aria-hidden>A</span><div><strong>Aoi Mentor</strong><small>担当教員 · 研究方法入門</small></div></header><div className={styles.demoField}><span>件名</span><i /></div><div className={styles.demoField}><span>本文</span><i /><i /><i /></div><footer><span>宛先を再検証して送信</span><button type="button">メッセージを送信</button></footer></div>

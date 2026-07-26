@@ -15,7 +15,7 @@ test("student cockpit reads the mock Moodle core routes without exposing a token
 
   await expect(page.getByRole("heading", { name: "学習ワークスペース" })).toBeVisible();
   await page.keyboard.press("Control+K");
-  await page.getByRole("dialog", { name: "画面とコースを検索" }).getByPlaceholder("画面名、コース名、略称").fill("knowledge check");
+  await page.getByRole("dialog", { name: "画面とコースを検索" }).getByLabel("検索語").fill("knowledge check");
   await expect(page.getByRole("option").filter({ hasText: "Week 1 knowledge check" })).toBeVisible();
   await page.getByRole("option").filter({ hasText: "Week 1 knowledge check" }).click();
   await expect(page).toHaveURL(/\/activities\/9105/);
@@ -284,13 +284,22 @@ test("companion Questionnaire and the first teacher DM remain inside the workspa
 
   await page.goto("/activities/9198");
   await expect(page.getByRole("heading", { name: "アンケート回答" })).toBeVisible();
-  await page.getByText("Yes", { exact: true }).click();
-  await page.getByText("Notebook", { exact: true }).click();
+  await page.getByRole("radio", { name: "Yes" }).check();
+  await page.getByRole("checkbox", { name: "Notebook" }).check();
+  await page.getByLabel("Preparation note").fill("Bring an extra pencil.");
   await page.getByLabel("I will attend the fieldwork session: Present").check();
   await page.getByRole("button", { name: "下書き保存" }).click();
   await expect(page.getByText("下書きを保存しました")).toBeVisible();
+  await page.getByRole("button", { name: "回答を確認" }).click();
+  await expect(page.getByRole("heading", { name: "送信前の確認" })).toBeFocused();
+  await expect(page.getByText("Bring an extra pencil.")).toBeVisible();
+  await page.getByRole("button", { name: "編集に戻る" }).first().click();
+  await expect(page.getByLabel("Preparation note")).toHaveValue("Bring an extra pencil.");
+  await page.getByRole("button", { name: "回答を確認" }).click();
   await page.getByRole("button", { name: "回答を送信" }).click();
-  await expect(page.getByText("回答を送信しました")).toBeVisible();
+  await expect(page.getByText("回答を送信しました", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "送信した回答" })).toBeVisible();
+  await expect(page.getByRole("radio")).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Moodle/ })).toHaveCount(0);
 
   await page.getByRole("button", { name: "移動・検索" }).click();
@@ -328,6 +337,54 @@ test("Questionnaire rate tables fit a narrow workspace", async ({ page }) => {
   const rateTable = page.locator(".ui-questionnaire__rate");
   await expect(rateTable).toBeVisible();
   await expect.poll(async () => rateTable.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await expect.poll(async () => page.locator("#main-content").evaluate(
+    (element) => element.scrollWidth <= element.clientWidth,
+  )).toBe(true);
   await page.getByLabel("I will attend the fieldwork session: Present").check();
   await expect(page.getByLabel("I will attend the fieldwork session: Present")).toBeChecked();
+});
+
+test("Questionnaire required errors focus the first unanswered question", async ({ page }) => {
+  await signIn(page, "alice", "alice-password");
+  await page.goto("/activities/9198");
+
+  await page.getByRole("button", { name: "回答を確認" }).click();
+
+  await expect(page.locator(".ui-questionnaire__operation[role='alert']")).toContainText("未回答の必須設問が2件あります");
+  await expect(page.locator("[data-question-id='7001']")).toBeFocused();
+  await expect(page.locator("[data-question-id='7001'] .ui-questionnaire__error")).toHaveText("この設問は必須です。");
+});
+
+test("Questionnaire keeps answers across forbidden and timeout retries", async ({ page }) => {
+  await signIn(page, "alice", "alice-password");
+  await page.goto("/activities/9198");
+  await page.getByRole("radio", { name: "Yes" }).check();
+  await page.getByRole("checkbox", { name: "Notebook" }).check();
+  await page.getByLabel("Preparation note").fill("Keep this response.");
+  await page.getByLabel("I will attend the fieldwork session: Present").check();
+  await page.getByRole("button", { name: "回答を確認" }).click();
+
+  const adapterPattern = "**/api/activities/9198/adapter";
+  await page.route(adapterPattern, async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({ error: "forbidden" }),
+      contentType: "application/json",
+      status: 403,
+    });
+  });
+  await page.getByRole("button", { name: "回答を送信" }).click();
+  await expect(page.locator(".ui-questionnaire__operation[role='alert']")).toHaveText("アクセスが禁止されています。");
+  await expect(page.getByText("Keep this response.")).toBeVisible();
+
+  await page.unroute(adapterPattern);
+  await page.route(adapterPattern, async (route) => {
+    await route.abort("timedout");
+  });
+  await page.getByRole("button", { name: "回答を送信" }).click();
+  await expect(page.locator(".ui-questionnaire__operation[role='alert']")).toContainText("通信に失敗しました");
+  await expect(page.getByText("Keep this response.")).toBeVisible();
+
+  await page.unroute(adapterPattern);
+  await page.getByRole("button", { name: "回答を送信" }).click();
+  await expect(page.getByRole("heading", { name: "送信した回答" })).toBeVisible();
 });

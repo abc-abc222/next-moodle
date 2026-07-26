@@ -5,15 +5,17 @@ export function ShowcaseSection({
   children,
   description,
   eyebrow,
+  id,
   title,
 }: Readonly<{
   children: ReactNode;
   description: string;
   eyebrow: string;
+  id?: string;
   title: string;
 }>) {
   return (
-    <section className={styles.section}>
+    <section className={styles.section} id={id}>
       <header className={styles.sectionHeader}>
         <span className={styles.eyebrow}>{eyebrow}</span>
         <div>

@@ -387,6 +387,21 @@
   gap: var(--space-4);
 }
 
+.questionnaireGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.questionnaireSpecimen {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.questionnaireSpecimen :global(.ui-questionnaire) {
+  margin-block-start: 0;
+}
+
 .surfaceGrid > [data-wide="true"] {
   grid-column: span 2;
 }
@@ -503,7 +518,8 @@
   }
 
   .surfaceGrid,
-  .stateGrid {
+  .stateGrid,
+  .questionnaireGrid {
     grid-template-columns: 1fr;
   }
 
