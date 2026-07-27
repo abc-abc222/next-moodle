@@ -37,7 +37,7 @@ export function SubmissionShowcase() {
         </ShowcaseSample>
         <ShowcaseSample label="Rich text" wide>
           <WritingWorkspace
-            aiAvailability={{ enabled: true, provider: "OpenAI" }}
+            aiAvailability={{ enabled: true, provider: "OpenAI compatible" }}
             aiConsentStorageKey="next-moodle:ai-consent:showcase"
             cmid={9101}
             disabled={false}

@@ -1,5 +1,4 @@
 import { handleAiReviewRequest } from "@/lib/ai/http";
-import { createAiHttpDependencies } from "@/lib/ai/runtime";
 
 export const runtime = "nodejs";
 
@@ -8,5 +7,5 @@ export async function POST(
   context: Readonly<{ params: Promise<{ cmid: string }> }>,
 ): Promise<Response> {
   const { cmid } = await context.params;
-  return handleAiReviewRequest(request, cmid, createAiHttpDependencies());
+  return handleAiReviewRequest(request, cmid);
 }

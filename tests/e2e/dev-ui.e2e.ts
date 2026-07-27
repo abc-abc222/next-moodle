@@ -35,8 +35,8 @@ for (const viewport of VIEWPORTS) {
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       await expect(page.locator(".ui-button").first()).toBeVisible();
       await expect(page.locator(".ui-field")).toHaveCount(8);
-      await expect(page.locator(".ui-badge")).toHaveCount(8);
-      await expect.poll(() => page.locator(".ui-notice").count()).toBeGreaterThanOrEqual(9);
+      await expect(page.locator(".ui-badge")).toHaveCount(7);
+      await expect(page.locator(".ui-notice")).toHaveCount(5);
       await expect(page.locator(".ui-skeleton")).toHaveCount(3);
       await expect(page.getByTestId("responsive-stack-specimen")).toBeVisible();
 

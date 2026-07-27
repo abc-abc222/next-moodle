@@ -8,7 +8,7 @@ Moodleを公式Web Service APIのまま利用し、学生向けフロントエ�
 - 成績、参加者、プロフィール、プライベートファイル、バッジ、学習プラン
 - 会話一覧、メッセージ送信、通知既読化
 - 標準活動を `/activities/[cmid]` の共通ワークスペースへ統合
-- 端末内PDFツールと、明示同意が必要なAI文章補助
+- 端末内PDFツールと、任意の文章補助
 
 ログイン時にMoodleが返す関数一覧から、機能ごとの `available` / `adapter_required` / `unavailable` を生成します。関数名の一覧はCookieへ保存せず、SHA-256と小さな能力マニフェストだけを8時間保持します。
 
@@ -26,12 +26,12 @@ Moodleを公式Web Service APIのまま利用し、学生向けフロントエ�
 | `MOODLE_REQUIRE_COMPANION` | `true`なら補助契約v2の5関数が揃うまで完全置換Readyにしません。 |
 | `MOODLE_TEACHER_ROLE_SHORTNAMES` | 先生連絡で宛先候補にするMoodleロールのshortname。 |
 | `SESSION_PASSWORD` | 32バイト以上のランダムな暗号化Cookie秘密鍵。 |
-| `AI_ASSIST_ENABLED` | `true`のときだけAI文章補助を有効化。既定値は`false`。 |
-| `OPENAI_API_KEY` | OpenAI APIキー。サーバー限定で、ブラウザへ渡しません。 |
-| `OPENAI_COMPLETION_MODEL` | 入力中の短い候補に使うモデル。 |
-| `OPENAI_REVIEW_MODEL` | 不足点・補足段落の明示レビューに使うモデル。 |
-| `AI_SAFETY_SECRET` | 匿名の安全識別子を作る、32バイト以上の独立した秘密鍵。 |
-| `AI_PRIVACY_NOTICE_URL` | 同意画面から案内する任意のHTTPSプライバシー説明。 |
+| `AI_ASSIST_ENABLED` | `true`のときだけ文章補助を有効化。既定値は`false`。 |
+| `AI_BASE_URL` | OpenAI互換の`/v1` API URL。OpenAI、LM Studio、Ollamaを設定できます。 |
+| `AI_API_KEY` | APIキー。LM Studio／Ollamaのローカル構成では空欄にできます。 |
+| `AI_MODEL` | 利用するチャット補完モデル名。 |
+| `AI_SAFETY_SECRET` | 利用回数制御用の不透明な利用者識別子を作る、32バイト以上の秘密鍵。 |
+| `AI_PRIVACY_NOTICE_URL` | 端末上の同意画面から案内する任意のHTTPSプライバシー説明。 |
 
 秘密鍵は次で生成できます。
 
@@ -58,13 +58,11 @@ bun run dev
 
 ローカルのMock Moodleは実在組織と無関係な2ユーザー分のfixtureを提供し、成績、教材、完了更新、課題提出、メッセージ、通知を実環境へ更新せず検証できます。
 
-## AI文章補助
+## 文章補助
 
-AI文章補助は初期状態で無効です。有効化しても、利用者が課題エディタ内で同意するまではOpenAIへ通信しません。同意はMoodleサイトとユーザーごとに分離した不透明なキーで端末内へ保存され、設定メニューからいつでも削除できます。
+文章補助は提出エディタの任意機能です。利用者が端末ごとに同意するまで通信しません。補助案は自動挿入せず、利用者が確認してから挿入します。本文の不足点確認または補足案の作成に、課題名、課題文、本文の最大6,000文字だけを使用します。Moodleトークン、パスワード、添付ファイル、コース一覧は送信しません。
 
-入力候補へ送るのは、課題名、プレーンテキスト化した課題文、カーソル前最大2,000文字と後最大500文字です。補足レビューは選択範囲または現在の節を最大6,000文字だけ送ります。氏名、Moodleトークン、添付ファイル、コース一覧、全文下書きは送りません。Responses APIは`store: false`、ツールなし、会話状態なしで呼び、プロンプトと出力をアプリのログへ記録しません。通常のAPI利用では、Zero Data Retention契約がない場合に不正利用監視ログが最大30日保持される可能性があります。詳細は[OpenAI APIのデータ管理](https://platform.openai.com/docs/models/default-usage-policies-by-endpoint)を確認してください。
-
-文章補助は根拠の追加や事実確認を行いません。候補は自動挿入せず、利用者が内容を確認してTabまたは個別の挿入操作で採用します。レート制限は単一Nodeプロセス内で管理するため、複数インスタンスへ展開する場合は共有ストアへ置き換えてください。
+通信先はOpenAI互換の`POST /v1/chat/completions`です。OpenAIのほか、同じインターフェースを公開するLM Studio（例: `http://127.0.0.1:1234/v1`）およびOllama（例: `http://127.0.0.1:11434/v1`）をサーバー環境変数だけで利用できます。ローカルHTTPはloopbackアドレスだけを許可し、外部通信先はHTTPSを必須にしています。
 
 ## 検証
 

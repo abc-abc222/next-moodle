@@ -62,38 +62,6 @@ test("context panels persist locally and inspector sheets restore keyboard focus
   await expect(inspectorTrigger).toBeFocused();
 });
 
-test("AI writing assistance waits for consent, streams a suggestion, and inserts an undoable paragraph", async ({ page }) => {
-  let completionRequests = 0;
-  page.on("request", (request) => {
-    if (request.url().includes("/ai/completion")) completionRequests += 1;
-  });
-  await signIn(page, "alice", "alice-password");
-  await page.goto("/assignments/9102");
-  const editor = page.locator(".ProseMirror");
-  await expect(editor).toBeVisible();
-  await editor.click();
-  await page.keyboard.type("The observations differ under the same conditions. ");
-  await page.waitForTimeout(800);
-  expect(completionRequests).toBe(0);
-
-  await page.getByText("文章補助を開く", { exact: false }).click();
-  await page.getByRole("button", { name: "内容を確認して有効化" }).click();
-  await editor.click();
-  await page.keyboard.type("The comparison needs a clear point of view. ");
-  await expect(page.getByText("比較の観点を先に示すと、結果の違いが明確になります。")).toBeVisible();
-  await page.keyboard.press("Tab");
-  await expect(editor).toContainText("結果の違いが明確になります");
-
-  await page.getByRole("button", { name: "補足段落を作る" }).click();
-  await expect(page.getByText("比較する観点を先に示すと、観察結果の違いが読み取りやすくなります。<strong>補足</strong>")).toBeVisible();
-  await page.getByRole("button", { name: "この段落を挿入" }).click();
-  await expect(editor).toContainText("<strong>補足</strong>");
-  await expect(editor.locator("strong")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "直前のAI挿入を元に戻す" })).toBeVisible();
-  await page.getByRole("button", { name: "直前のAI挿入を元に戻す" }).click();
-  await expect(page.getByRole("button", { name: "直前のAI挿入を元に戻す" })).toHaveCount(0);
-});
-
 test("a second fixture account cannot see Alice's courses", async ({ page }) => {
   await signIn(page, "bob", "bob-password");
 

@@ -196,7 +196,6 @@
 }
 
 .workspaceGrid,
-.aiStateGrid,
 .screenGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
@@ -296,24 +295,6 @@
   color: var(--text-primary);
 }
 
-.editorSample {
-  display: flex;
-  min-block-size: 12rem;
-  align-content: start;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  border: 1px solid var(--border-default);
-  border-radius: var(--shape-card);
-  background: var(--surface-elevated);
-  color: var(--text-primary);
-  line-height: 1.75;
-}
-
-.editorSample p { inline-size: 100%; margin: 0; }
-.ghostSuggestion { inline-size: 100%; color: var(--text-tertiary); }
-.editorSample kbd { padding: 0 var(--space-2); border: 1px solid var(--border-default); border-radius: var(--shape-control); color: var(--text-tertiary); font-size: var(--font-size-caption); }
-
 .activityRowSample {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
@@ -356,17 +337,6 @@
 .capabilityRows i[data-state="available"] { background: var(--status-success); }
 .capabilityRows i[data-state="adapter"] { background: var(--status-warning); }
 .capabilityRows i[data-state="unavailable"] { background: var(--status-error); }
-
-.aiResultSample {
-  display: grid;
-  gap: var(--space-3);
-  align-content: start;
-  padding: var(--space-4);
-  border-block: 1px solid var(--border-default);
-}
-
-.aiResultSample p { margin: 0; color: var(--text-secondary); line-height: 1.6; }
-.aiResultSample button { min-block-size: 2.75rem; border: 1px solid var(--border-default); border-radius: var(--shape-control); background: transparent; color: var(--text-primary); }
 
 .badgeBlock {
   display: grid;

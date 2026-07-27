@@ -7,11 +7,10 @@ import { z } from "zod";
 
 import { Button, Notice, Surface } from "@/components/ui";
 import type { AiAvailability } from "@/lib/ai/config";
-import type { AiTextFormat } from "@/lib/ai/contracts";
 import type { NativeSubmissionPolicy } from "@/lib/moodle/queries/assignment-policy";
 import type { AssignmentFile, AssignmentOnlineText } from "@/lib/moodle/queries/assignments";
 import { SubmissionFileQueue } from "./submission-file-queue";
-import { WritingWorkspace } from "./writing-workspace";
+import { type WritingTextFormat, WritingWorkspace } from "./writing-workspace";
 import {
   APP_MAX_SUBMISSION_BYTES,
   fileIdentity,
@@ -37,7 +36,7 @@ type Props = Readonly<{
   policy: EnabledPolicy;
 }>;
 
-function aiTextFormat(value: number): AiTextFormat {
+function writingTextFormat(value: number): WritingTextFormat {
   return value === 0 || value === 1 || value === 2 || value === 4 ? value : 2;
 }
 
@@ -199,7 +198,7 @@ export function AssignmentSubmissionForm(props: Props) {
               aiConsentStorageKey={props.aiConsentStorageKey}
               cmid={props.cmid}
               disabled={pending}
-              format={aiTextFormat(props.initialText.format)}
+              format={writingTextFormat(props.initialText.format)}
               maxLength={props.policy.limits.maxOnlineTextBytes}
               onChange={setText}
               submitting={pending}

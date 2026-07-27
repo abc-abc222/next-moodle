@@ -5,10 +5,9 @@ import {
   DotsThreeCircle,
   House,
   MagnifyingGlass,
-  Sparkle,
 } from "@phosphor-icons/react/dist/ssr";
 
-import { Badge, Notice } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { ActionDock, DataRow, RouteHeader } from "@/components/app-shell/workspace-frame";
 import { ShowcaseSample, ShowcaseSection } from "./showcase-frame";
 import styles from "./showcase.module.css";
@@ -24,7 +23,7 @@ const NAV_ITEMS = [
 export function EditorialNativeShowcase() {
   return (
     <ShowcaseSection
-      description="ラベル付きFocus rail、必要時だけ開く文脈パネル、広い学習キャンバス、文章補助と意味のあるモーションを確認します。"
+      description="ラベル付きFocus rail、必要時だけ開く文脈パネル、広い学習キャンバス、意味のあるモーションを確認します。"
       eyebrow="01 / Editorial Native"
       title="Content, context, and meaningful motion"
     >
@@ -53,13 +52,6 @@ export function EditorialNativeShowcase() {
             <span><BookOpen aria-hidden size={20} weight="regular" />研究方法入門</span>
             <span><BookOpen aria-hidden size={20} weight="regular" />データ演習</span>
           </nav>
-        </ShowcaseSample>
-        <ShowcaseSample label="Inline suggestion">
-          <div className={styles.editorSample}>
-            <p>観察結果を同じ条件で比較すると、</p>
-            <span className={styles.ghostSuggestion}>変化の差をより明確に説明できます。</span>
-            <kbd>Tabで採用</kbd><kbd>Escで破棄</kbd>
-          </div>
         </ShowcaseSample>
         <ShowcaseSample label="Course activity row">
           <div className={styles.activityRowSample}>
@@ -95,18 +87,6 @@ export function EditorialNativeShowcase() {
         <span data-motion="return"><strong>復帰</strong><small>親画面へ戻る</small></span>
         <span data-motion="switch"><strong>切替</strong><small>ナビ・タブ・絞り込み</small></span>
         <span data-motion="reveal"><strong>表示</strong><small>読み込み完了</small></span>
-      </div>
-      <div className={styles.aiStateGrid}>
-        <Notice title="送信内容を確認" tone="info"><p>同意前は通信しません。氏名・添付・全文下書きは送信対象外です。</p></Notice>
-        <Notice title="候補を考えています" tone="info"><p><Sparkle aria-hidden size={16} /> 入力を止めてから650ms後に1件だけ要求します。</p></Notice>
-        <Notice title="文章補助を停止しました" tone="success"><p>端末内の同意を削除しました。</p></Notice>
-        <Notice title="この内容への提案はできません" tone="warning"><p>本文は維持されています。自分の言葉で続けてください。</p></Notice>
-        <Notice title="利用回数の上限です" tone="warning"><p>少し待ってから再度お試しください。</p></Notice>
-        <div className={styles.aiResultSample}>
-          <Badge tone="accent">補足案</Badge>
-          <p>比較する観点を先に示すと、観察結果の違いが読み取りやすくなります。</p>
-          <button type="button">この段落を挿入</button>
-        </div>
       </div>
       <div className={styles.screenGrid}>
         <ShowcaseSample label="Login workspace">

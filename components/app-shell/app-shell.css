@@ -217,10 +217,6 @@
 
 .ui-app-mobile-settings__panel { inset-block-start: calc(100% + var(--space-2)); inset-inline-end: 0; }
 .ui-app-site { margin: 0; overflow: hidden; color: var(--text-secondary); font-size: var(--font-size-caption); text-overflow: ellipsis; white-space: nowrap; }
-.ui-app-ai-preference { display: grid; gap: var(--space-2); padding-block: var(--space-3); border-block: 1px solid var(--border-subtle); }
-.ui-app-ai-preference strong { color: var(--text-primary); font-size: var(--font-size-label); }
-.ui-app-ai-preference p { margin: var(--space-1) 0 0; color: var(--text-tertiary); font-size: var(--font-size-caption); line-height: 1.5; }
-.ui-app-ai-preference .ui-button,
 .ui-app-logout .ui-button { inline-size: 100%; }
 .ui-app-logout { display: grid; gap: var(--space-1); }
 .ui-app-logout__status { color: var(--status-error); font-size: var(--font-size-caption); overflow-wrap: anywhere; }

@@ -1,173 +1,102 @@
 import { z } from "zod";
 
-import type { AiTextFormat } from "./contracts";
-import { AiReviewResultSchema } from "./contracts";
-import {
-  AiProviderRefusalError,
-  AiProviderResponseError,
-} from "./errors";
-import { limitReviewResult, type AiReviewResult } from "./context";
+import { limitReviewResult } from "./context";
+import { AiReviewResultSchema, type AiReviewResult, type AiTextFormat } from "./contracts";
 
-export { AiProviderRefusalError } from "./errors";
-
-const CompletionDeltaSchema = z.object({
-  type: z.literal("response.output_text.delta"),
-  delta: z.string(),
+const ChatCompletionSchema = z.object({
+  choices: z.array(z.object({
+    message: z.object({ content: z.string().nullable().optional() }),
+  })).min(1),
 });
-const EventEnvelopeSchema = z.object({ type: z.string() });
 
-const REVIEW_SCHEMA = {
-  type: "json_schema",
-  name: "next_moodle_review",
-  strict: true,
-  schema: {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      summary: { type: "string" },
-      gaps: { type: "array", items: { type: "string" } },
-      paragraphs: { type: "array", items: { type: "string" } },
-    },
-    required: ["summary", "gaps", "paragraphs"],
-  },
-} as const;
+export class AiProviderError extends Error {
+  override readonly name = "AiProviderError";
+  readonly code: "access_forbidden" | "ai_provider_rate_limited" | "ai_timeout" | "ai_unavailable";
 
-type ProviderBaseInput = Readonly<{
-  taskTitle: string;
-  taskDescription: string;
-  safetyIdentifier: string;
-  signal: AbortSignal;
-}>;
+  constructor(code: AiProviderError["code"]) {
+    super("AI provider request failed.");
+    this.code = code;
+  }
+}
 
-export type AiCompletionProviderInput = ProviderBaseInput & Readonly<{
-  beforeCursor: string;
-  afterCursor: string;
-  format: AiTextFormat;
-}>;
-
-export type AiReviewProviderInput = ProviderBaseInput & Readonly<{
+export type AiReviewProviderInput = Readonly<{
   excerpt: string;
   format: AiTextFormat;
   intent: "gaps" | "paragraphs";
-}>;
-
-export type AiProviderCompletionEvent =
-  | Readonly<{ kind: "delta"; text: string }>
-  | Readonly<{ kind: "done" }>;
-
-type OpenAiTransportBaseRequest = Readonly<{
-  input: string;
-  instructions: string;
-  model: string;
-  reasoningEffort: "none" | "low";
-  safetyIdentifier: string;
   signal: AbortSignal;
-  store: false;
+  taskDescription: string;
+  taskTitle: string;
 }>;
 
-export type OpenAiCompletionTransportRequest = OpenAiTransportBaseRequest & Readonly<{
-  maxOutputTokens: 180;
-}>;
-
-export type OpenAiReviewTransportRequest = OpenAiTransportBaseRequest & Readonly<{
-  maxOutputTokens: 900;
-  responseSchema: typeof REVIEW_SCHEMA;
-}>;
-
-export interface OpenAiTransport {
-  createCompletion(
-    request: OpenAiCompletionTransportRequest,
-  ): Promise<AsyncIterable<unknown>>;
-  createReview(request: OpenAiReviewTransportRequest): Promise<string>;
-}
-
-export interface AiWritingProvider {
-  streamCompletion(
-    input: AiCompletionProviderInput,
-  ): AsyncIterable<AiProviderCompletionEvent>;
-  review(input: AiReviewProviderInput): Promise<AiReviewResult>;
-}
-
-type ProviderOptions = Readonly<{
-  completionModel: string;
-  reviewModel: string;
-  transport: OpenAiTransport;
+type OpenAiCompatibleProviderOptions = Readonly<{
+  apiKey: string;
+  baseUrl: string;
+  model: string;
 }>;
 
 function formatName(format: AiTextFormat): string {
   return format === 1 ? "HTML" : format === 4 ? "Markdown" : "プレーンテキスト";
 }
 
-export class OpenAiWritingProvider implements AiWritingProvider {
-  readonly #options: ProviderOptions;
+function responseJson(value: string): unknown {
+  const stripped = value.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  return JSON.parse(stripped);
+}
 
-  constructor(options: ProviderOptions) {
+export class OpenAiCompatibleWritingProvider {
+  readonly #options: OpenAiCompatibleProviderOptions;
+
+  constructor(options: OpenAiCompatibleProviderOptions) {
     this.#options = options;
   }
 
-  async *streamCompletion(
-    input: AiCompletionProviderInput,
-  ): AsyncIterable<AiProviderCompletionEvent> {
-    const stream = await this.#options.transport.createCompletion({
-      input: `課題名:\n${input.taskTitle}\n\n課題文:\n${input.taskDescription}\n\n形式: ${formatName(input.format)}\n\nカーソル前:\n${input.beforeCursor}\n\nカーソル後:\n${input.afterCursor}`,
-      instructions: "学習者が書いている日本語レポートの続きを最大2文で補助する。与えられた文脈にない事実、数値、引用、参考文献を追加しない。全文を代筆せず、候補本文だけを返す。",
-      maxOutputTokens: 180,
-      model: this.#options.completionModel,
-      reasoningEffort: "none",
-      safetyIdentifier: input.safetyIdentifier,
-      signal: input.signal,
-      store: false,
-    });
-    for await (const raw of stream) {
-      const envelope = EventEnvelopeSchema.safeParse(raw);
-      if (!envelope.success) throw new AiProviderResponseError();
-      switch (envelope.data.type) {
-        case "response.output_text.delta": {
-          const delta = CompletionDeltaSchema.safeParse(raw);
-          if (!delta.success) throw new AiProviderResponseError();
-          yield { kind: "delta", text: delta.data.delta };
-          break;
-        }
-        case "response.completed":
-          yield { kind: "done" };
-          return;
-        case "response.refusal.delta":
-        case "response.refusal.done":
-          throw new AiProviderRefusalError();
-        case "error":
-        case "response.failed":
-        case "response.incomplete":
-          throw new AiProviderResponseError();
-        default:
-          break;
-      }
-    }
-    throw new AiProviderResponseError();
-  }
-
   async review(input: AiReviewProviderInput): Promise<AiReviewResult> {
-    const output = await this.#options.transport.createReview({
-      input: `課題名:\n${input.taskTitle}\n\n課題文:\n${input.taskDescription}\n\n形式: ${formatName(input.format)}\n\n確認対象:\n${input.excerpt}`,
-      instructions: input.intent === "gaps"
-        ? "学習者の文章に不足する説明を確認する。与えられた文脈にない事実、数値、引用、参考文献を作らない。summaryとgapsを簡潔に返し、paragraphsは空配列にする。"
-        : "学習者の文章を補う最大3段落の案を作る。与えられた文脈にない事実、数値、引用、参考文献を作らず、全文を代筆しない。",
-      maxOutputTokens: 900,
-      model: this.#options.reviewModel,
-      reasoningEffort: "low",
-      responseSchema: REVIEW_SCHEMA,
-      safetyIdentifier: input.safetyIdentifier,
-      signal: input.signal,
-      store: false,
-    });
-    let parsedJson: unknown;
+    const instructions = input.intent === "gaps"
+      ? "学習者の文章に不足する説明を確認してください。根拠のない事実、数値、引用、参考文献を作らず、本文を代筆しないでください。"
+      : "学習者の文章を補う、最大3つの短い段落案を作ってください。根拠のない事実、数値、引用、参考文献を作らず、全文を代筆しないでください。";
+    const request = {
+      max_tokens: 900,
+      messages: [
+        {
+          content: `${instructions}\n\n必ず次のJSONだけを返してください。\n{"summary":"簡潔な要約","gaps":["不足点"],"paragraphs":["補足段落"]}\n不足点の確認ではparagraphsを空配列にし、補足段落ではgapsを空配列にできます。`,
+          role: "system",
+        },
+        {
+          content: `課題名:\n${input.taskTitle}\n\n課題文:\n${input.taskDescription.slice(0, 4_000)}\n\n入力形式: ${formatName(input.format)}\n\n確認対象:\n${input.excerpt}`,
+          role: "user",
+        },
+      ],
+      model: this.#options.model,
+      temperature: 0.2,
+    };
+    let response: Response;
     try {
-      parsedJson = JSON.parse(output);
+      response = await fetch(`${this.#options.baseUrl}/chat/completions`, {
+        body: JSON.stringify(request),
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.#options.apiKey === "" ? {} : { Authorization: `Bearer ${this.#options.apiKey}` }),
+        },
+        method: "POST",
+        signal: input.signal,
+      });
     } catch (error) {
-      if (error instanceof SyntaxError) throw new AiProviderResponseError();
-      throw error;
+      if (error instanceof DOMException && error.name === "TimeoutError") throw new AiProviderError("ai_timeout");
+      throw new AiProviderError("ai_unavailable");
     }
-    const parsed = AiReviewResultSchema.safeParse(parsedJson);
-    if (!parsed.success) throw new AiProviderResponseError();
-    return limitReviewResult(parsed.data);
+    if (response.status === 401 || response.status === 403) throw new AiProviderError("access_forbidden");
+    if (response.status === 429) throw new AiProviderError("ai_provider_rate_limited");
+    if (!response.ok) throw new AiProviderError("ai_unavailable");
+    const envelope = ChatCompletionSchema.safeParse(await response.json());
+    const content = envelope.success ? envelope.data.choices[0]?.message.content : undefined;
+    if (content === undefined || content === null) throw new AiProviderError("ai_unavailable");
+    try {
+      const parsed = AiReviewResultSchema.safeParse(responseJson(content));
+      if (!parsed.success) throw new AiProviderError("ai_unavailable");
+      return limitReviewResult(parsed.data);
+    } catch (error) {
+      if (error instanceof AiProviderError) throw error;
+      throw new AiProviderError("ai_unavailable");
+    }
   }
 }

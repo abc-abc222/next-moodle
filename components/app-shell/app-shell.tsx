@@ -13,7 +13,6 @@ import type { CommandItem } from "@/components/command-palette/search";
 import { ThemeControl } from "@/components/ui";
 import type { CommandCourse } from "@/lib/moodle/queries/courses";
 import { LogoutButton } from "./logout-button";
-import { AiPreferenceControl } from "./ai-preference-control";
 import { AppNavigation } from "./navigation";
 import { TransitionLink, WorkspaceTransition } from "./transitions";
 import type { WorkspaceMode } from "./motion";
@@ -39,8 +38,6 @@ const SCREEN_COMMANDS = [
 
 type AppShellProps = Readonly<{
   appName: string;
-  aiAvailable: boolean;
-  aiConsentStorageKey: string;
   children: ReactNode;
   courses: readonly CommandCourse[];
   siteName: string;
@@ -54,8 +51,6 @@ function resolveWorkspaceMode(pathname: string): WorkspaceMode {
 }
 
 export function AppShell({
-  aiAvailable,
-  aiConsentStorageKey,
   appName,
   children,
   courses,
@@ -94,7 +89,6 @@ export function AppShell({
             <div className="ui-app-dock-settings__panel">
               <div><strong>{appName}</strong><p className="ui-app-site" title={siteName}>{siteName}</p></div>
               <ThemeControl />
-              <AiPreferenceControl available={aiAvailable} consentStorageKey={aiConsentStorageKey} />
               <LogoutButton />
             </div>
           </details>
@@ -120,7 +114,6 @@ export function AppShell({
             <p className="ui-app-site" title={siteName}>{siteName}</p>
             <TransitionLink className="ui-app-tool-link" href="/tools/pdf" intent="switch"><FilePdf aria-hidden size={20} /> PDFツール</TransitionLink>
             <ThemeControl />
-            <AiPreferenceControl available={aiAvailable} consentStorageKey={aiConsentStorageKey} />
             <LogoutButton />
           </div>
         </details>

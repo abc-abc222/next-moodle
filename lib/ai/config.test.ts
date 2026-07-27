@@ -1,58 +1,26 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  AiConfigurationError,
-  createAiRuntimeConfig,
-  readAiRuntimeConfig,
-  toAiAvailability,
-} from "./config";
+import { AiConfigurationError, createAiRuntimeConfig, toAiAvailability } from "./config";
 
-describe("AI runtime configuration", () => {
-  test("Given no AI environment, When parsed, Then assistance stays disabled without secrets", () => {
-    const config = readAiRuntimeConfig({});
-
-    expect(config).toEqual({
-      enabled: false,
-      completionModel: "gpt-5.6-luna",
-      reviewModel: "gpt-5.6-terra",
-    });
-    expect(toAiAvailability(config)).toEqual({
-      enabled: false,
-      provider: "OpenAI",
-    });
+describe("OpenAI-compatible AI configuration", () => {
+  test("accepts LM Studio and Ollama loopback endpoints without an API key", () => {
+    for (const baseUrl of ["http://127.0.0.1:1234/v1", "http://127.0.0.1:11434/v1"]) {
+      const config = createAiRuntimeConfig({
+        baseUrl,
+        enabled: "true",
+        model: "local-model",
+        safetySecret: "a".repeat(32),
+      });
+      expect(config).toMatchObject({ baseUrl, enabled: true, model: "local-model" });
+      expect(toAiAvailability(config)).toEqual({ enabled: true, provider: "OpenAI compatible" });
+    }
   });
 
-  test("Given an enabled deployment, When parsed, Then secret values stay outside availability", () => {
-    const config = createAiRuntimeConfig({
-      enabled: "true",
-      apiKey: "sk-test-value-that-never-leaves-the-server",
-      completionModel: "gpt-5.6-luna",
-      reviewModel: "gpt-5.6-terra",
-      safetySecret: "safety-secret-with-at-least-thirty-two-bytes",
-      privacyNoticeUrl: "https://example.edu/privacy/ai",
-    });
-
-    expect(config.enabled).toBe(true);
-    expect(toAiAvailability(config)).toEqual({
-      enabled: true,
-      provider: "OpenAI",
-      privacyNoticeUrl: "https://example.edu/privacy/ai",
-    });
-    expect(JSON.stringify(toAiAvailability(config))).not.toContain("sk-test");
-    expect(JSON.stringify(toAiAvailability(config))).not.toContain("safety-secret");
-  });
-
-  test("Given enabled AI without a safe secret, When parsed, Then configuration is rejected", () => {
+  test("requires HTTPS for a non-local compatible endpoint", () => {
     expect(() => createAiRuntimeConfig({
+      baseUrl: "http://model.example/v1",
       enabled: "true",
-      apiKey: "sk-test",
-      safetySecret: "too-short",
+      safetySecret: "a".repeat(32),
     })).toThrow(AiConfigurationError);
-  });
-
-  test("Given an unknown enable flag, When parsed, Then configuration is rejected", () => {
-    expect(() => createAiRuntimeConfig({ enabled: "sometimes" })).toThrow(
-      AiConfigurationError,
-    );
   });
 });

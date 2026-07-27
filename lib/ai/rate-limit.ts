@@ -1,61 +1,29 @@
 const WINDOW_MS = 60_000;
-const LIMITS = {
-  completion: 12,
-  review: 3,
-} as const;
+const LIMIT = 3;
 
-export type AiRequestKind = keyof typeof LIMITS;
+type UserState = { active: boolean; requests: number[] };
 
-type AcquireInput = Readonly<{
-  kind: AiRequestKind;
-  now: number;
-  userKey: string;
-}>;
-
-type UserRateState = {
-  active: boolean;
-  completion: number[];
-  review: number[];
-};
-
-export class AiRateLimitError extends Error {
-  override readonly name = "AiRateLimitError";
+export class AiRequestLimitError extends Error {
+  override readonly name = "AiRequestLimitError";
   readonly code = "ai_rate_limited";
-
-  constructor() {
-    super("AI assistance rate limit reached.");
-  }
 }
 
-export class AiConcurrentRequestError extends Error {
-  override readonly name = "AiConcurrentRequestError";
+export class AiRequestInProgressError extends Error {
+  override readonly name = "AiRequestInProgressError";
   readonly code = "ai_request_in_progress";
-
-  constructor() {
-    super("Another AI assistance request is already active.");
-  }
 }
 
 export class AiRateLimiter {
-  readonly #users = new Map<string, UserRateState>();
+  readonly #users = new Map<string, UserState>();
 
-  acquire(input: AcquireInput): () => void {
-    const state = this.#users.get(input.userKey) ?? {
-      active: false,
-      completion: [],
-      review: [],
-    };
-    if (state.active) {
-      throw new AiConcurrentRequestError();
-    }
-    const recent = state[input.kind].filter((timestamp) => input.now - timestamp < WINDOW_MS);
-    if (recent.length >= LIMITS[input.kind]) {
-      throw new AiRateLimitError();
-    }
-    state[input.kind] = [...recent, input.now];
+  acquire(userKey: string, now = Date.now()): () => void {
+    const state = this.#users.get(userKey) ?? { active: false, requests: [] };
+    if (state.active) throw new AiRequestInProgressError();
+    state.requests = state.requests.filter((timestamp) => now - timestamp < WINDOW_MS);
+    if (state.requests.length >= LIMIT) throw new AiRequestLimitError();
+    state.requests.push(now);
     state.active = true;
-    this.#users.set(input.userKey, state);
-
+    this.#users.set(userKey, state);
     let released = false;
     return () => {
       if (released) return;
