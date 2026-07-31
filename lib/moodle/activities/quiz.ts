@@ -3,7 +3,8 @@ import "server-only";
 import { z } from "zod";
 
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
-import { plainTextFromMoodleMessage, sanitizeQuizQuestionHtml, type SanitizedQuizHtml } from "@/lib/security/html";
+import { moodleQuizDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
+import { plainTextFromMoodleMessage } from "@/lib/security/html";
 import { MOODLE_FUNCTIONS } from "../functions";
 import type { MoodleCourseId, MoodleCourseModuleId, MoodleUserId } from "../identifiers";
 import { toMoodleReadFailure, type MoodleReadResult } from "../queries/dashboard";
@@ -56,7 +57,7 @@ const AttemptDataResponseSchema = z.object({
 
 export type QuizAttempt = Readonly<z.infer<typeof AttemptSchema>>;
 export type QuizQuestion = Readonly<{
-  html: SanitizedQuizHtml;
+  document: MoodleDocument;
   maximumMark: string | null;
   page: number;
   slot: number;
@@ -136,7 +137,7 @@ export async function readQuizActivity(
           nextPage: active.data.nextpage,
           page: request.page,
           questions: active.data.questions.map((question) => ({
-            html: sanitizeQuizQuestionHtml(question.html, { siteUrl: request.siteUrl }),
+            document: moodleQuizDocumentFromHtml(question.html, { siteUrl: request.siteUrl }),
             maximumMark: maximumMarkFromQuestionHtml(question.html),
             page: question.page,
             slot: question.slot,

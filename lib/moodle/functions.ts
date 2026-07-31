@@ -104,11 +104,6 @@ export const MOODLE_FUNCTIONS = {
   imscps: "mod_imscp_get_imscps_by_courses",
   pages: "mod_page_get_pages_by_courses",
   urls: "mod_url_get_urls_by_courses",
-  adapterManifest: "local_nextmoodle_get_manifest",
-  adapterBranding: "local_nextmoodle_get_branding",
-  activityAdapter: "local_nextmoodle_get_activity_adapter",
-  executeActivityAction: "local_nextmoodle_execute_activity_action",
-  createRuntimeTicket: "local_nextmoodle_create_runtime_ticket",
 } as const;
 
 export type MoodleKnownFunctionName =
@@ -162,8 +157,6 @@ const MUTATION_FUNCTIONS: ReadonlySet<string> = new Set([
   MOODLE_FUNCTIONS.updateWorkshopSubmission,
   MOODLE_FUNCTIONS.saveScormTracks,
   MOODLE_FUNCTIONS.bigBlueButtonJoin,
-  MOODLE_FUNCTIONS.executeActivityAction,
-  MOODLE_FUNCTIONS.createRuntimeTicket,
 ]);
 
 const KNOWN_FUNCTIONS: ReadonlySet<string> = new Set(

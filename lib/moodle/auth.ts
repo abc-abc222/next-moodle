@@ -7,7 +7,6 @@ import {
   MoodleResponseError,
 } from "./errors";
 import { MOODLE_FUNCTIONS } from "./functions";
-import { CompanionManifestSchema } from "./activities/contracts";
 import {
   type MoodleCredentials,
   MoodleTokenSchema,
@@ -21,8 +20,10 @@ import {
   MoodleSiteInfoWireSchema,
   toSafeSiteInfo,
   type SafeSiteInfo,
+  type MoodleUiSession,
 } from "./site";
 import { postMoodleForm } from "./transport";
+import { requestMoodleUiSession } from "./ui-session";
 
 const TokenFailureSchema = z.object({
   error: z.string(),
@@ -36,6 +37,7 @@ const TokenSuccessSchema = z.object({
 export type MoodleLogin = SafeSiteInfo & {
   readonly service: MoodleConfig["service"];
   readonly token: MoodleToken;
+  readonly uiSession: MoodleUiSession;
 };
 
 export async function requestMoodleToken(
@@ -70,7 +72,6 @@ export async function requestMoodleToken(
 export async function authenticateWithMoodle(
   config: MoodleConfig,
   credentials: MoodleCredentials,
-  requireCompanion = false,
 ): Promise<MoodleLogin> {
   const token = await requestMoodleToken(config, credentials);
   const client = new MoodleClient({ config, token });
@@ -79,20 +80,12 @@ export async function authenticateWithMoodle(
     {},
     MoodleSiteInfoWireSchema,
   );
-  const availableFunctions = new Set(siteResponse.data.functions.map((entry) => entry.name));
-  const companion = availableFunctions.has(MOODLE_FUNCTIONS.adapterManifest)
-    ? await client.call(MOODLE_FUNCTIONS.adapterManifest, {}, CompanionManifestSchema)
-    : null;
+  const siteInfo = toSafeSiteInfo(siteResponse.data, config);
+  const uiSession = await requestMoodleUiSession(config, credentials, siteInfo.userId);
   return {
     service: config.service,
     token,
-    ...toSafeSiteInfo(
-      siteResponse.data,
-      config,
-      {
-        companion: companion?.data ?? { adapters: [], contractVersion: 0 },
-        requireCompanion,
-      },
-    ),
+    uiSession,
+    ...siteInfo,
   };
 }

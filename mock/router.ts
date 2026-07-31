@@ -95,6 +95,62 @@ const loginEndpoint = (
   return jsonResponse({ token, privatetoken: `private-${user.key}`, userid: user.userid, service: "moodle_mobile_app" })
 }
 
+const htmlResponse = (body: string, status = 200, headers: Readonly<Record<string, string>> = {}): Response =>
+  new Response(body, { status, headers: { "cache-control": "no-store", "content-type": "text/html; charset=utf-8", ...headers } })
+
+const uiUser = (request: Request, state: MoodleMockState): FixtureUser | undefined => {
+  const cookie = request.headers.get("cookie") ?? ""
+  const value = /(?:^|;\s*)MoodleSession=([^;]+)/.exec(cookie)?.[1]
+  const key = value === undefined ? undefined : state.uiSessions.get(value)
+  return key === undefined ? undefined : FIXTURE_USERS[key]
+}
+
+const uiLoginEndpoint = (request: Request, input: MockRequestInput, state: MoodleMockState): Response => {
+  if (request.method === "GET") {
+    return htmlResponse('<main><form action="/login/index.php" id="login" method="post"><input name="logintoken" type="hidden" value="mock-login-token"><label>Username<input name="username"></label><label>Password<input name="password" type="password"></label></form></main>', 200, { "set-cookie": "MoodleSession=mock-login-pending; Path=/; HttpOnly" })
+  }
+  if (firstField(input, "logintoken") !== "mock-login-token") return htmlResponse('<main><form action="/login/index.php" id="login"><input name="username"></form></main>', 200)
+  const user = userForCredentials(firstField(input, "username"), firstField(input, "password"))
+  if (user === undefined) return htmlResponse('<main><form action="/login/index.php" id="login"><input name="username"></form><div class="alert alert-danger">Invalid login</div></main>', 200)
+  const cookie = `mock-ui-${user.key}`
+  state.uiSessions.set(cookie, user.key)
+  return htmlResponse(`<body data-userid="${user.userid}"><main><h1>Dashboard</h1></main><a href="/user/profile.php?id=${user.userid}">Profile</a><a href="/login/logout.php?sesskey=mock">Logout</a></body>`, 200, { "set-cookie": `MoodleSession=${cookie}; Path=/; HttpOnly` })
+}
+
+const questionnairePage = (request: Request, input: MockRequestInput, state: MoodleMockState): Response => {
+  const user = uiUser(request, state)
+  if (user === undefined) return new Response(null, { status: 303, headers: { location: "/login/index.php" } })
+  const id = Number(firstField(input, "id") ?? "9198")
+  const key = `${user.key}:${id}`
+  const saved = state.questionnaireResponses.get(key)
+  const path = new URL(request.url).pathname
+  if (path.endsWith("/view.php")) {
+    return saved === undefined
+      ? htmlResponse(`<main><h1>Fieldwork preparation survey</h1><p>Confirm your preparation before the field session.</p><a href="/mod/questionnaire/complete.php?id=${id}">アンケートに回答する</a></main>`)
+      : htmlResponse(`<main><h1>Fieldwork preparation survey</h1><p>回答を受け付けました。</p><a href="/mod/questionnaire/myreport.php?instance=598&userid=${user.userid}&action=vresp">あなたの回答を表示する</a></main>`)
+  }
+  if (path.endsWith("/complete.php") && request.method === "GET") {
+    return htmlResponse(`<main><h1>Fieldwork preparation survey</h1><form action="/mod/questionnaire/complete.php?id=${id}" method="post"><input name="sesskey" type="hidden" value="mock-sesskey"><input name="id" type="hidden" value="${id}"><fieldset><legend>Preparation</legend><p>安全確認を完了しましたか？</p><label for="q1yes">はい</label><input id="q1yes" name="q1" required type="radio" value="yes"><label for="q1no">いいえ</label><input id="q1no" name="q1" type="radio" value="no"></fieldset><label for="q2">連絡事項</label><textarea id="q2" name="q2" rows="4"></textarea><button name="submit" type="submit" value="Submit questionnaire">回答を送信</button></form></main>`)
+  }
+  if (path.endsWith("/complete.php") && request.method === "POST") {
+    const q1 = input.fields.get("q1") ?? []
+    const q2 = input.fields.get("q2") ?? []
+    if (q1.length === 0) return htmlResponse(`<main><h1>Fieldwork preparation survey</h1><div class="alert alert-danger">安全確認は必須です。</div></main>`, 200)
+    state.questionnaireResponses.set(key, { q1, q2 })
+  }
+  const answers = state.questionnaireResponses.get(key) ?? { q1: ["yes"], q2: [] }
+  return htmlResponse(`<main><h1>Fieldwork preparation survey</h1><h2>あなたの回答を表示する</h2><p>提出完了: 2026年 04月 21日 10:55</p><fieldset><legend>質問 #1 安全確認を完了しましたか？</legend><h2>1</h2><p>安全確認を完了しましたか？</p><label for="r1y">はい</label><input ${answers.q1?.includes("yes") === true ? "checked" : ""} disabled id="r1y" type="radio" value="yes"><label for="r1n">いいえ</label><input ${answers.q1?.includes("no") === true ? "checked" : ""} disabled id="r1n" type="radio" value="no"></fieldset><fieldset><legend>質問 #2 連絡事項</legend><h2>2</h2><p>連絡事項</p><textarea disabled>${answers.q2?.[0] ?? ""}</textarea></fieldset></main>`)
+}
+
+const htmlActivityPage = (request: Request, moduleName: string, state: MoodleMockState): Response => {
+  const user = uiUser(request, state)
+  if (user === undefined) return new Response(null, { status: 303, headers: { location: "/login/index.php" } })
+  const body = moduleName === "url"
+    ? `<p data-userid="${user.userid}">リソースを開くには <a href="https://resources.synthetic.invalid/lesson-video">学習リソースを開く</a> をクリックしてください。</p>`
+    : `<p data-userid="${user.userid}">Moodle内で確認できる活動情報です。</p><button type="button">Continue</button>`
+  return htmlResponse(`<html><head><title>Activity overview</title></head><body><nav>Moodle navigation</nav><main><h1>${moduleName.toUpperCase()} learning content</h1>${body}</main><footer>Moodle footer</footer></body></html>`)
+}
+
 const missingCapability = (functionName: string): Response =>
   moodleException(
     "webservice_access_exception",
@@ -224,6 +280,10 @@ export const handleMoodleRequest = async (
     const input = await readMockRequestInput(request)
     const scenario = scenarioFor(request, input, options)
     if (path === "/login/token.php") return loginEndpoint(input, state, scenario)
+    if (path === "/login/index.php") return uiLoginEndpoint(request, input, state)
+    if (path.startsWith("/mod/questionnaire/")) return questionnairePage(request, input, state)
+    const htmlModule = /^\/mod\/(scorm|h5pactivity|lti|bigbluebuttonbn|url)\//.exec(path)?.[1]
+    if (htmlModule !== undefined) return htmlActivityPage(request, htmlModule, state)
     if (path === "/webservice/rest/server.php") return restEndpoint(request, input, state, options, scenario)
     if (path === "/webservice/upload.php") return uploadEndpoint(input, state, scenario)
     if (path === "/webservice/pluginfile.php" || path.startsWith("/webservice/pluginfile.php/")) {

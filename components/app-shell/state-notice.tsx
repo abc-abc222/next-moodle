@@ -97,7 +97,7 @@ export function StateNotice({ diagnostic, reason, retryHref }: StateNoticeProps)
       title="必要なMoodle機能を利用できません"
       tone="info"
     >
-      <p>この画面に必要なWebサービスまたは補助アダプターが有効ではありません。接続診断の不足項目をMoodle管理者へ共有してください。</p>
+      <p>この画面に必要な標準APIまたはHTML画面を利用できません。接続診断の不足項目をMoodle管理者へ共有してください。</p>
     </Notice>
   );
 }

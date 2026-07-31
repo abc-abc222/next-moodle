@@ -8,7 +8,7 @@ import {
   MoodleCredentialsSchema,
   MoodleTokenSchema,
 } from "../../lib/moodle/model";
-import { jsonResponse, startWireMoodle } from "./wire-fake";
+import { htmlResponse, jsonResponse, startWireMoodle } from "./wire-fake";
 
 const credentials = MoodleCredentialsSchema.parse({
   username: "fixture-student",
@@ -78,6 +78,12 @@ describe("Moodle login boundary", () => {
       if (request.path === "/login/token.php") {
         return jsonResponse({ token: "fixture-issued-token" });
       }
+      if (request.path === "/login/index.php" && request.method === "GET") {
+        return htmlResponse('<form action="/login/index.php" id="login"><input name="logintoken" type="hidden" value="fixture-login-token"><input name="username"></form>', { headers: { "Set-Cookie": "MoodleSession=fixture-ui-cookie; Path=/; HttpOnly" } });
+      }
+      if (request.path === "/login/index.php" && request.method === "POST") {
+        return htmlResponse('<body data-userid="41"><a href="/user/profile.php?id=41">Profile</a><a href="/login/logout.php?sesskey=private">Logout</a></body>');
+      }
       return jsonResponse({
         userid: 41,
         sitename: "Example Learning Hub",
@@ -105,17 +111,20 @@ describe("Moodle login boundary", () => {
       // Then
       expect(login.site.siteName).toBe("Example Learning Hub");
       expect(login.service).toBe("moodle_mobile_app");
-      expect(login.manifest.version).toBe(4);
+      expect(login.manifest.version).toBe(5);
       expect(login.manifest.functionHash).toMatch(/^[a-f0-9]{64}$/);
       expect(login.manifest.functionBits).toMatch(/^[A-Za-z0-9_-]+$/);
       expect(login.manifest.features.courses).toBe("available");
       expect(login.manifest.features.calendar).toBe("available");
       expect(login.manifest.features.assignmentsRead).toBe("unavailable");
+      expect(login.uiSession).toMatchObject({ cookieName: "MoodleSession", cookieValue: "fixture-ui-cookie" });
       expect(JSON.stringify(login.manifest)).not.toContain(
         MOODLE_FUNCTIONS.courseContents,
       );
       expect(JSON.stringify(login)).not.toContain("Private Student Name");
-      expect(moodle.requests).toHaveLength(2);
+      expect(moodle.requests).toHaveLength(4);
+      expect(moodle.requests[3]?.form.get("logintoken")).toBe("fixture-login-token");
+      expect(moodle.requests[3]?.headers.get("cookie")).toContain("MoodleSession=fixture-ui-cookie");
     } finally {
       moodle.close();
     }

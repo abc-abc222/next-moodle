@@ -4,8 +4,6 @@ export const emptyPayload = (functionName: MoodleFunction): unknown => {
   switch (functionName) {
     case "core_webservice_get_site_info":
       return {}
-    case "local_nextmoodle_get_manifest":
-      return { contractversion: 2, adapters: [{ modulename: "questionnaire", operations: ["read", "save", "submit"] }] }
     case "core_course_get_enrolled_courses_by_timeline_classification":
     case "core_enrol_get_users_courses":
       return functionName === "core_enrol_get_users_courses" ? [] : { courses: [], nextoffset: 0 }

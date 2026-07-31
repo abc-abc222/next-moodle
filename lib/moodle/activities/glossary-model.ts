@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
 
 const MoodleBooleanSchema = z.union([z.boolean(), z.number().int().min(0).max(1)])
   .transform((value) => value === true || value === 1);
@@ -24,7 +24,7 @@ export type GlossaryActivityData = Readonly<{
     author: string;
     concept: string;
     createdAt: number;
-    definition: SanitizedMoodleHtml;
+    definition: MoodleDocument;
     id: number;
     updatedAt: number;
   }>[];
@@ -50,7 +50,7 @@ export function projectGlossaryActivity(input: Readonly<{
         author: entry.userfullname,
         concept: entry.concept,
         createdAt: entry.timecreated,
-        definition: sanitizeMoodleHtml(entry.definition, { siteUrl: input.siteUrl }),
+        definition: moodleDocumentFromHtml(entry.definition, { siteUrl: input.siteUrl }),
         id: entry.id,
         updatedAt: entry.timemodified,
       };

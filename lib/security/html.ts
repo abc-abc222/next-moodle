@@ -8,6 +8,9 @@ const SanitizedHtmlSchema = z.string().brand("SanitizedMoodleHtml");
 export type SanitizedMoodleHtml = z.infer<typeof SanitizedHtmlSchema>;
 const SanitizedQuizHtmlSchema = z.string().brand("SanitizedQuizHtml");
 export type SanitizedQuizHtml = z.infer<typeof SanitizedQuizHtmlSchema>;
+const MoodlePageHtmlSchema = z.string().max(2_500_000);
+const SanitizedMoodlePageHtmlSchema = z.string().brand("SanitizedMoodlePageHtml");
+export type SanitizedMoodlePageHtml = z.infer<typeof SanitizedMoodlePageHtmlSchema>;
 
 type SanitizeMoodleHtmlOptions = Readonly<{
   siteUrl: string;
@@ -96,10 +99,13 @@ function embeddedContentLink(value: string, siteUrl: string): string | null {
   const candidate = new URL(resolved);
   const site = new URL(siteUrl);
   if (candidate.origin !== site.origin) return resolved;
+  const sitePath = site.pathname.endsWith("/") ? site.pathname : `${site.pathname}/`;
+  if (!candidate.pathname.startsWith(sitePath)) return null;
+  const pathname = `/${candidate.pathname.slice(sitePath.length)}`.replace(/\/{2,}/g, "/");
   const id = Number(candidate.searchParams.get("id"));
   if (!Number.isSafeInteger(id) || id <= 0) return null;
-  if (candidate.pathname === "/course/view.php") return `/courses/${id}`;
-  const moduleName = /^\/mod\/([a-z0-9_]+)\/view\.php$/.exec(candidate.pathname)?.[1];
+  if (pathname === "/course/view.php") return `/courses/${id}`;
+  const moduleName = /^\/mod\/([a-z0-9_]+)\/view\.php$/.exec(pathname)?.[1];
   if (moduleName === undefined) return null;
   return moduleName === "assign" ? `/assignments/${id}` : `/activities/${id}`;
 }
@@ -278,4 +284,125 @@ export function sanitizeQuizQuestionHtml(
     },
   });
   return SanitizedQuizHtmlSchema.parse(sanitized);
+}
+
+const PAGE_TAGS = [
+  ...ALLOWED_TAGS,
+  "article",
+  "button",
+  "div",
+  "fieldset",
+  "footer",
+  "form",
+  "h1",
+  "header",
+  "input",
+  "label",
+  "legend",
+  "main",
+  "nav",
+  "option",
+  "section",
+  "select",
+  "small",
+  "span",
+  "textarea",
+  "title",
+] as const;
+
+function safePageUrl(value: string, siteUrl: string): string | null {
+  if (!URL.canParse(value, `${siteUrl}/`)) return null;
+  const candidate = new URL(value, `${siteUrl}/`);
+  const site = new URL(siteUrl);
+  const basePath = site.pathname.replace(/\/+$/, "");
+  if (
+    candidate.origin !== site.origin
+    || candidate.username !== ""
+    || candidate.password !== ""
+    || candidate.hash !== ""
+    || (basePath !== "" && candidate.pathname !== basePath && !candidate.pathname.startsWith(`${basePath}/`))
+  ) return null;
+  for (const key of candidate.searchParams.keys()) {
+    if (["password", "token", "wstoken", "logintoken", "sesskey"].includes(key.toLowerCase())) return null;
+  }
+  return candidate.toString();
+}
+
+/**
+ * A Moodle URL activity can intentionally point at a third-party resource.
+ * Keep that destination as an inert outbound link for the typed document
+ * renderer; it is never fetched, proxied, or used as a form action.
+ */
+function safePageContentLink(value: string, siteUrl: string): string | null {
+  const resolved = safeMoodleLink(value, siteUrl);
+  if (resolved === null) return null;
+  const candidate = new URL(resolved);
+  const site = new URL(siteUrl);
+  if (candidate.origin === site.origin) return safePageUrl(value, siteUrl);
+  return candidate.protocol === "http:" || candidate.protocol === "https:" ? resolved : null;
+}
+
+/**
+ * Sanitizes a complete authenticated Moodle page before any screen parser sees
+ * it. Structural form attributes are retained for server-only parsing; hidden
+ * values are removed from every public model later in the pipeline.
+ */
+export function sanitizeMoodlePageHtml(
+  value: string,
+  options: SanitizeMoodleHtmlOptions,
+): SanitizedMoodlePageHtml {
+  const input = MoodlePageHtmlSchema.parse(value);
+  const sanitized = sanitizeHtmlLibrary(input, {
+    allowedTags: [...PAGE_TAGS],
+    allowedAttributes: {
+      "*": ["aria-describedby", "aria-label", "class", "data-fieldtype", "data-region", "hidden", "id", "role"],
+      a: ["href", "title"],
+      button: ["disabled", "name", "type", "value"],
+      form: ["action", "data-action-invalid", "id", "method"],
+      img: ["src", "alt", "title", "width", "height"],
+      input: ["autocomplete", "checked", "disabled", "id", "max", "maxlength", "min", "multiple", "name", "placeholder", "required", "step", "type", "value"],
+      label: ["for"],
+      option: ["disabled", "selected", "value"],
+      select: ["disabled", "id", "multiple", "name", "required"],
+      textarea: ["cols", "disabled", "id", "maxlength", "name", "placeholder", "required", "rows"],
+      th: ["colspan", "rowspan", "scope"],
+      td: ["colspan", "rowspan"],
+    },
+    allowedSchemes: ["http", "https"],
+    allowProtocolRelative: false,
+    disallowedTagsMode: "discard",
+    transformTags: {
+      a: (_tagName, attributes) => {
+        const href = attributes.href === undefined ? null : safePageContentLink(attributes.href, options.siteUrl);
+        return href === null
+          ? { tagName: "span", attribs: {} }
+          : { tagName: "a", attribs: { href, ...(attributes.title === undefined ? {} : { title: attributes.title }) } };
+      },
+      form: (_tagName, attributes) => {
+        const action = attributes.action === undefined ? null : safePageUrl(attributes.action, options.siteUrl);
+        return {
+          tagName: "form",
+          attribs: {
+            ...(action === null ? { "data-action-invalid": "true" } : { action }),
+            ...(attributes.id === undefined ? {} : { id: attributes.id }),
+            method: attributes.method?.toLowerCase() === "post" ? "post" : "get",
+          },
+        };
+      },
+      img: (_tagName, attributes) => {
+        const src = attributes.src === undefined ? null : safeProtectedFile(attributes.src, options.siteUrl);
+        return src === null
+          ? { tagName: "span", attribs: {} }
+          : { tagName: "img", attribs: { src, alt: attributes.alt ?? "" } };
+      },
+      input: (_tagName, attributes) => {
+        const allowedTypes = new Set(["button", "checkbox", "date", "datetime-local", "email", "file", "hidden", "number", "radio", "range", "reset", "submit", "text"]);
+        const type = allowedTypes.has(attributes.type?.toLowerCase() ?? "text")
+          ? (attributes.type?.toLowerCase() ?? "text")
+          : "text";
+        return { tagName: "input", attribs: { ...attributes, type } };
+      },
+    },
+  });
+  return SanitizedMoodlePageHtmlSchema.parse(sanitized);
 }

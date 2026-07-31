@@ -3,12 +3,14 @@ import { ArrowLeft, CalendarDots, FileText, Info } from "@phosphor-icons/react/d
 import { InspectorSheet } from "@/components/app-shell/inspector-sheet";
 import { TransitionLink } from "@/components/app-shell/transitions";
 import { PageFrame, RouteHeader } from "@/components/app-shell/workspace-frame";
-import { Badge, Notice } from "@/components/ui";
+import { Badge, Notice, RichContent } from "@/components/ui";
 import type { AiAvailability } from "@/lib/ai/config";
 import type { AppRuntimeConfig } from "@/lib/app-config";
 import { dateTimeFormatter } from "@/lib/date-time";
+import type { MoodleScreenModel } from "@/lib/moodle/page-model";
 import type { AssignmentDetail } from "@/lib/moodle/queries/assignments";
 import { AssignmentSubmissionForm } from "./assignment-submission-form";
+import { AssignmentHtmlWorkspace } from "./assignment-html-workspace";
 import { assignmentStatusLabel } from "./status-label";
 
 function dueLabel(data: AssignmentDetail, config: AppRuntimeConfig): string {
@@ -58,16 +60,25 @@ export function AssignmentDetailView({ aiAvailability, aiConsentStorageKey, conf
         <article className="ui-assignment-canvas">
           <section className="ui-assignment__description" aria-labelledby="assignment-description-title">
             <header><span>BRIEF</span><h2 id="assignment-description-title">課題の説明</h2></header>
-            <div className="ui-rich-content" dangerouslySetInnerHTML={{ __html: data.description }} />
+            <RichContent className="ui-rich-content" document={data.description} />
           </section>
           {native.kind === "enabled" ? (
             <AssignmentSubmissionForm aiAvailability={aiAvailability} aiConsentStorageKey={aiConsentStorageKey} cmid={data.cmid} draftStorageKey={draftStorageKey} dueLabel={due} existingFiles={data.existingFiles} initialText={data.existingText} locale={config.locale} policy={native} />
-          ) : <Notice title="この提出方法は現在利用できません" tone="warning"><p>{fallbackReason(data)} 特殊提出形式の場合は local_nextmoodle アダプターをMoodle管理者へ依頼してください。</p></Notice>}
-          {data.feedback === null ? null : <section className="ui-assignment-feedback"><header><span>REVIEW</span><h2>フィードバック</h2></header>{data.feedback.grade === null ? null : <div dangerouslySetInnerHTML={{ __html: data.feedback.grade }} />}{data.feedback.comments.map((comment, index) => <div key={index} dangerouslySetInnerHTML={{ __html: comment }} />)}</section>}
+          ) : <Notice title="この提出方法は現在利用できません" tone="warning"><p>{fallbackReason(data)} この提出形式の型付きパーサーが必要です。</p></Notice>}
+          {data.feedback === null ? null : <section className="ui-assignment-feedback"><header><span>REVIEW</span><h2>フィードバック</h2></header>{data.feedback.grade === null ? null : <RichContent document={data.feedback.grade} />}{data.feedback.comments.map((comment, index) => <RichContent document={comment} key={index} />)}</section>}
         </article>
       )}
       header={<RouteHeader actions={<InspectorSheet description="提出状況と保存済みファイル" label={<><Info aria-hidden size={17} />提出情報</>} title="提出情報">{details}</InspectorSheet>} description={<><CalendarDots aria-hidden size={16} /> <span className="ui-tabular">{due}</span></>} eyebrow={<TransitionLink href={`/courses/${data.assignment.course}`} intent="return"><ArrowLeft aria-hidden size={15} />{data.courseName}</TransitionLink>} metadata={`CMID ${data.cmid}`} shared={{ identifier: data.cmid, kind: "activity" }} title={data.name} />}
       mode="focus"
     />
   );
+}
+
+/** The API path is optional; this view keeps an assignment usable via its Moodle HTML form. */
+export function AssignmentHtmlFallbackView({ cmid, screen }: Readonly<{ cmid: number; screen: MoodleScreenModel }>) {
+  return <PageFrame
+    content={<AssignmentHtmlWorkspace actionEndpoint={`/api/assignments/${cmid}/html-action`} screen={screen} />}
+    header={<RouteHeader description="提出状況・期限・操作を学習向けの画面に整理しました。" eyebrow={<TransitionLink href="/courses" intent="return"><ArrowLeft aria-hidden size={15} />コース一覧</TransitionLink>} metadata={`CMID ${cmid}`} shared={{ identifier: cmid, kind: "activity" }} title={screen.title} />}
+    mode="focus"
+  />;
 }

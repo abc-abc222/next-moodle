@@ -335,7 +335,7 @@
 .capabilityRows > span { display: flex; min-block-size: 2.75rem; align-items: center; gap: var(--space-2); border-block-end: 1px solid var(--border-subtle); font-size: var(--font-size-body-sm); }
 .capabilityRows i { inline-size: .5rem; block-size: .5rem; border-radius: 50%; background: var(--text-disabled); }
 .capabilityRows i[data-state="available"] { background: var(--status-success); }
-.capabilityRows i[data-state="adapter"] { background: var(--status-warning); }
+.capabilityRows i[data-state="html"] { background: var(--status-warning); }
 .capabilityRows i[data-state="unavailable"] { background: var(--status-error); }
 
 .badgeBlock {

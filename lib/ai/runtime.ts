@@ -3,6 +3,7 @@ import "server-only";
 import { createAuthenticatedMoodleClient, requireMoodleSession } from "../auth/server";
 import type { MoodleCourseModuleId } from "../moodle/identifiers";
 import { currentUnixSeconds } from "../moodle/now";
+import { moodleDocumentText } from "../moodle/html";
 import { fetchAssignmentDetail } from "../moodle/queries/assignments.query";
 import { AiConfigurationError, createAiRuntimeConfig, readAiRuntimeConfig, toAiAvailability, type AiAvailability } from "./config";
 import { createAiConsentStorageKey } from "./context";
@@ -28,7 +29,7 @@ export async function loadAiAssignment(cmid: MoodleCourseModuleId): Promise<AiAs
   }, cmid);
   const policy = detail.nativeSubmission;
   return {
-    descriptionHtml: detail.description,
+    descriptionHtml: moodleDocumentText(detail.description),
     onlineTextSupported: policy.kind === "enabled" && (policy.mode === "online_text" || policy.mode === "mixed"),
     siteUrl: session.site.siteUrl,
     taskTitle: detail.name,

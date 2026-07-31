@@ -5,10 +5,7 @@ import {
   MoodleCourseModuleIdSchema,
   type MoodleCourseModuleId,
 } from "../identifiers";
-import {
-  sanitizeMoodleHtml,
-  type SanitizedMoodleHtml,
-} from "../../security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "../html";
 import { moodleFileProxyPath } from "../../security/moodle-file";
 import {
   deriveNativeSubmissionPolicy,
@@ -63,8 +60,8 @@ export type AssignmentOnlineText = Readonly<{
 }>;
 
 export type AssignmentFeedback = Readonly<{
-  comments: readonly SanitizedMoodleHtml[];
-  grade: SanitizedMoodleHtml | null;
+  comments: readonly MoodleDocument[];
+  grade: MoodleDocument | null;
   gradedAt: number;
 }>;
 
@@ -72,7 +69,7 @@ export type AssignmentDetail = Readonly<{
   assignment: MoodleAssignmentWire;
   cmid: MoodleCourseModuleId;
   courseName: string;
-  description: SanitizedMoodleHtml;
+  description: MoodleDocument;
   dueAt: number;
   existingFiles: readonly AssignmentFile[];
   existingText: AssignmentOnlineText;
@@ -159,10 +156,7 @@ function existingFiles(
   );
 }
 
-function existingText(
-  submission: MoodleSubmissionStatus,
-  siteUrl: string,
-): AssignmentOnlineText {
+function existingText(submission: MoodleSubmissionStatus): AssignmentOnlineText {
   const plugins = submission.lastattempt?.submission?.plugins ?? [];
   for (const plugin of plugins) {
     if (plugin.type.toLowerCase().replace(/^assignsubmission_/, "") !== "onlinetext") {
@@ -172,9 +166,7 @@ function existingText(
     if (editor !== undefined) {
       const format = editor.format ?? 2;
       return {
-        content: format === 1
-          ? sanitizeMoodleHtml(editor.text, { siteUrl })
-          : editor.text,
+        content: editor.text,
         format,
       };
     }
@@ -190,18 +182,18 @@ function feedbackFor(
   if (feedback === undefined || Array.isArray(feedback)) {
     return null;
   }
-  const comments: SanitizedMoodleHtml[] = [];
+  const comments: MoodleDocument[] = [];
   for (const plugin of feedback.plugins) {
     for (const field of plugin.editorfields) {
       if (field.text !== "") {
-        comments.push(sanitizeMoodleHtml(field.text, { siteUrl }));
+        comments.push(moodleDocumentFromHtml(field.text, { siteUrl }));
       }
     }
   }
   const grade =
     feedback.gradefordisplay === undefined
       ? null
-      : sanitizeMoodleHtml(feedback.gradefordisplay, { siteUrl });
+      : moodleDocumentFromHtml(feedback.gradefordisplay, { siteUrl });
   return grade === null && comments.length === 0
     ? null
     : { comments, grade, gradedAt: feedback.gradeddate };
@@ -224,12 +216,12 @@ export function projectAssignmentDetail(
     assignment: input.assignment,
     cmid: input.assignment.cmid,
     courseName: input.course.fullname,
-    description: sanitizeMoodleHtml(input.assignment.intro, {
+    description: moodleDocumentFromHtml(input.assignment.intro, {
       siteUrl: input.siteUrl,
     }),
     dueAt,
     existingFiles: existingFiles(input.submission, input.assignment.cmid, input.siteUrl),
-    existingText: existingText(input.submission, input.siteUrl),
+    existingText: existingText(input.submission),
     feedback: feedbackFor(input.submission, input.siteUrl),
     isGraded: attempt?.graded === true || grading === "graded",
     isLocked: attempt?.locked === true,

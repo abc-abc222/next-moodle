@@ -27,7 +27,6 @@ export {
   deriveCapabilityManifest,
   featureDeliveryFor,
   activityDeliveryFor,
-  pluginDeliveryFor,
   MoodleCapabilityManifestSchema,
   STUDENT_FEATURE_KEYS,
   StudentFeatureKeySchema,
@@ -61,10 +60,12 @@ export {
   MoodleSessionSchema,
   MoodleSiteInfoWireSchema,
   MoodleSiteSchema,
+  MoodleUiSessionSchema,
   toSafeSiteInfo,
   type MoodleSession,
   type MoodleSite,
   type MoodleSiteInfoWire,
+  type MoodleUiSession,
   type SafeSiteInfo,
 } from "./site";
 export {

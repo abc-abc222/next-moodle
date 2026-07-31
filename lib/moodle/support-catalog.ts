@@ -8,13 +8,12 @@ import {
   ACTIVITY_MODULE_NAMES,
   activityDeliveryFor,
   featureDeliveryFor,
-  pluginDeliveryFor,
 } from "./capabilities";
 
 export type StudentSupportCatalogEntry = Readonly<{
   delivery: CapabilityDelivery;
   id: string;
-  kind: "activity" | "feature" | "plugin";
+  kind: "activity" | "feature";
   label: string;
   state: CapabilityState;
 }>;
@@ -77,21 +76,9 @@ export function studentSupportCatalog(
     id: moduleName,
     kind: "activity" as const,
     label: moduleName,
-    state: manifest.activityAdapters[moduleName],
+    state: manifest.activitySupport[moduleName],
   }));
-  const plugins = manifest.companionModules
-    .filter((moduleName) => !ACTIVITY_MODULE_NAMES.includes(moduleName as typeof ACTIVITY_MODULE_NAMES[number]))
-    .map((moduleName) => {
-      const delivery = pluginDeliveryFor(manifest, moduleName);
-      return {
-        delivery,
-        id: moduleName,
-        kind: "plugin" as const,
-        label: moduleName,
-        state: delivery === "unavailable" ? "unavailable" as const : "adapter_required" as const,
-      };
-    });
-  return [...features, ...activities, ...plugins].sort((left, right) =>
+  return [...features, ...activities].sort((left, right) =>
     left.label.localeCompare(right.label, "ja"),
   );
 }

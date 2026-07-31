@@ -1,6 +1,6 @@
 const ERROR_COPY: Readonly<Record<string, string>> = {
   authentication_failed: "セッションが終了しました。文章は端末内に残っています。再ログインしてください。",
-  existing_file_unavailable: "保存済みファイルを再取得できません。Moodleでファイルを確認してください。",
+  existing_file_unavailable: "保存済みファイルを再取得できません。画面を再読み込みして、もう一度確認してください。",
   file_count_exceeded: "提出できるファイル数を超えています。ファイルを減らしてください。",
   file_signature_mismatch: "ファイルの内容と形式が一致しません。正しいファイルを書き出し直してください。",
   file_too_large: "ファイル容量が上限を超えています。圧縮するか分割してください。",

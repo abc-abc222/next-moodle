@@ -5,7 +5,6 @@ import type { RestContext } from "./rest-context";
 import { emptyPayload } from "./rest-empty";
 import { forumChoicePayload } from "./rest-forum-choice";
 import { knowledgePayload } from "./rest-knowledge";
-import { launchPayload } from "./rest-launch";
 import { quizPayload } from "./rest-quiz";
 import { studentPayload } from "./rest-student";
 import type { FixtureUser, MoodleFunction, MoodleMockState, MockRequestInput } from "./types";
@@ -154,7 +153,6 @@ const delegatedPayload = (functionName: MoodleFunction, context: RestContext): u
   quizPayload(functionName, context) ??
   forumChoicePayload(functionName, context) ??
   knowledgePayload(functionName, context) ??
-  launchPayload(functionName, context) ??
   studentPayload(functionName, context) ??
   emptyPayload(functionName);
 
@@ -162,41 +160,6 @@ const successPayload = (functionName: MoodleFunction, context: RestContext): unk
   switch (functionName) {
     case "core_webservice_get_site_info":
       return siteInfo(context.user, context.options, context.siteUrl);
-    case "local_nextmoodle_get_manifest":
-      return { contractversion: 2, adapters: [{ modulename: "questionnaire", operations: ["read", "save", "submit"] }] };
-    case "local_nextmoodle_get_activity_adapter":
-      return {
-        activity: {
-          kind: "questionnaire",
-          anonymous: false,
-          answers: [],
-          availableFrom: 0,
-          availableUntil: 1_795_000_000,
-          canSave: true,
-          canSubmit: true,
-          canViewResponses: false,
-          questions: [
-            { dependencies: [], description: "", id: 7001, kind: "yesno", label: "Safety guidance reviewed", max: null, min: null, options: [{ label: "Yes", value: "y" }, { label: "No", value: "n" }], required: true, step: null },
-            { dependencies: [{ logic: "equals", questionId: 7001, value: "y" }], description: "", id: 7002, kind: "checkbox", label: "Equipment ready", max: null, min: null, options: [{ label: "Notebook", value: "7101" }, { label: "Weatherproof cover", value: "7102" }], required: true, step: null },
-            { dependencies: [], description: "Optional note for the instructor", id: 7003, kind: "textarea", label: "Preparation note", max: null, min: null, options: [], required: false, step: null },
-            { dependencies: [], description: "Select one response for each row.", id: 7004, kind: "rate", label: "Attendance confirmation", max: null, min: null, options: [{ label: "I will attend the fieldwork session", value: "7201" }], rateOptions: [{ label: "Present", value: "Present" }, { label: "Absent", value: "Absent" }], required: true, step: null },
-          ],
-          responseId: 0,
-          status: "not_started",
-        },
-        blocks: [{ kind: "notice", tone: "info", text: "Responses remain in the Questionnaire plugin." }],
-        cmid: numberField(context.input, "cmid") ?? 9198,
-        contractversion: 2,
-        modulename: "questionnaire",
-        operations: ["read", "save", "submit"],
-        source: "companion",
-        state: "available",
-        title: "Fieldwork preparation survey",
-      };
-    case "local_nextmoodle_execute_activity_action":
-      return { responseid: 8001, state: context.input.fields.get("action")?.[0] === "submit" ? "submitted" : "in_progress", warnings: [] };
-    case "local_nextmoodle_create_runtime_ticket":
-      return { expiresat: Math.floor(Date.now() / 1_000) + 60, ticket: "mock-runtime-ticket-abcdefghijklmnopqrstuvwxyz" };
     case "core_course_get_enrolled_courses_by_timeline_classification":
       return coursePayload(context.user);
     case "core_enrol_get_users_courses":

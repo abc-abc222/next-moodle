@@ -27,7 +27,7 @@ Synthetic users are:
 | `alice` | `alice-password` | `mock-token-alice` | 101 | BIO-101, STAT-210 |
 | `bob` | `bob-password` | `mock-token-bob` | 202 | HIST-330 |
 
-The supported wire paths are `/login/token.php`, `/webservice/rest/server.php`,
+The supported wire paths are `/login/token.php`, `/login/index.php`, `/webservice/rest/server.php`,
 `/webservice/upload.php`, and `/webservice/pluginfile.php`. The REST handler implements the
 function list in `types.ts`, including course, calendar, assignment, completion, and notification
 calls. URL-encoded, JSON, and multipart bodies are accepted. Repeated form keys and Moodle's

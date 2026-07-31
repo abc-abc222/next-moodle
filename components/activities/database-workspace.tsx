@@ -5,13 +5,14 @@ import ky from "ky";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, Notice } from "@/components/ui";
+import { Button, Notice, RichContent } from "@/components/ui";
+import { isEmptyMoodleDocument } from "@/lib/moodle/html";
 import type { DatabaseActivityData, DatabaseField } from "@/lib/moodle/activities/database-model";
 
 function DatabaseControl({ field }: Readonly<{ field: DatabaseField }>) {
   const shared = { "aria-labelledby": `database-field-label-${field.id}`, id: `database-field-${field.id}`, name: String(field.id), required: field.required };
   if (field.kind === "unsupported") {
-    return <Notice title={`${field.name} はこの画面で入力できません`} tone="warning"><p>特殊フィールドの入力には型付きアダプターが必要です。</p></Notice>;
+    return <Notice title={`${field.name} は現在入力できません`} tone="warning"><p>この特殊フィールドの型付きパーサーが必要です。入力せずに診断情報を共有してください。</p></Notice>;
   }
   if (field.kind === "textarea") return <textarea {...shared} maxLength={50_000} rows={6} />;
   if (field.kind === "select") return <select {...shared}><option value="">選択してください</option>{field.options.map((option) => <option key={option} value={option}>{option}</option>)}</select>;
@@ -51,7 +52,7 @@ export function DatabaseWorkspace({ cmid, data }: Readonly<{
   return (
     <section className="ui-database" aria-labelledby="database-title">
       <header><div><span className="ui-kicker">Structured records</span><h2 id="database-title">データベース</h2></div><span>{data.total}件</span></header>
-      {data.entriesHtml === "" ? <p className="ui-activity-empty">表示できるレコードはありません。</p> : <div className="ui-database-records ui-rich-content" dangerouslySetInnerHTML={{ __html: data.entriesHtml }} />}
+      {isEmptyMoodleDocument(data.entries) ? <p className="ui-activity-empty">表示できるレコードはありません。</p> : <RichContent className="ui-database-records ui-rich-content" document={data.entries} />}
       {data.canAdd ? <details className="ui-database-create"><summary><Database aria-hidden size={18} />レコードを追加</summary><form onSubmit={(event) => void submit(event)}>{data.fields.map((field) => <div className="ui-database-field" key={field.id}><span id={`database-field-label-${field.id}`}>{field.name}{field.required ? " *" : ""}</span>{field.description === "" ? null : <small>{field.description}</small>}<DatabaseControl field={field} /></div>)}<span aria-live="polite" className="ui-form-error">{error}</span><Button disabled={pending} type="submit"><FloppyDisk aria-hidden size={17} />{pending ? "保存中" : "レコードを保存"}</Button></form></details> : <Notice title="追加は現在利用できません" tone="info"><p>閲覧期間または登録上限を確認してください。</p></Notice>}
     </section>
   );

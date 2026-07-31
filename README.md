@@ -10,7 +10,7 @@ Moodleを公式Web Service APIのまま利用し、学生向けフロントエ�
 - 標準活動を `/activities/[cmid]` の共通ワークスペースへ統合
 - 端末内PDFツールと、任意の文章補助
 
-ログイン時にMoodleが返す関数一覧から、機能ごとの `available` / `adapter_required` / `unavailable` を生成します。関数名の一覧はCookieへ保存せず、SHA-256と小さな能力マニフェストだけを8時間保持します。
+ログイン時にMoodleが返す関数一覧から、機能ごとの `available` / `unavailable` を生成します。関数名の一覧はCookieへ保存せず、SHA-256と小さな能力マニフェストだけを8時間保持します。
 
 ## 開発を始める
 
@@ -23,7 +23,6 @@ Moodleを公式Web Service APIのまま利用し、学生向けフロントエ�
 | `APP_TIME_ZONE` | Moodleの日時を表示するIANAタイムゾーン。 |
 | `MOODLE_BASE_URL` | MoodleのHTTPS origin。末尾に `/login/index.php` は付けません。 |
 | `MOODLE_SERVICE` | Moodle管理者が許可したWeb Service名。通常は `moodle_mobile_app`。 |
-| `MOODLE_REQUIRE_COMPANION` | `true`なら補助契約v2の5関数が揃うまで完全置換Readyにしません。 |
 | `MOODLE_TEACHER_ROLE_SHORTNAMES` | 先生連絡で宛先候補にするMoodleロールのshortname。 |
 | `SESSION_PASSWORD` | 32バイト以上のランダムな暗号化Cookie秘密鍵。 |
 | `AI_ASSIST_ENABLED` | `true`のときだけ文章補助を有効化。既定値は`false`。 |
@@ -48,11 +47,11 @@ bun run dev
 
 `configuration_error` が出る場合は、起動中のプロセスが `MOODLE_BASE_URL` と `SESSION_PASSWORD` を読み込んでいません。 `.env.local` を保存した後、開発サーバーを再起動してください。Moodleのユーザー名やパスワードを環境変数へ保存する必要はありません。
 
-1つのデプロイは1つの信頼済みMoodleへ接続します。利用者が接続先URLを入力する構成や、Moodle画面のスクレイピングは採用していません。
+1つのデプロイは1つの信頼済みMoodleへ接続します。標準Web Serviceを優先し、不足する学生画面は固定URLから認証済みHTMLを取得して、サニタイズ済みの型付き画面モデルへ変換します。利用者が接続先URLを入力する任意URLプロキシは採用していません。
 
 ## Moodle側の設定
 
-専用Web Serviceへ、利用する機能の公式関数だけを許可してください。権限のない機能は画面上で明示的に無効になります。学生向けUIを完全置換する構成では、`moodle-plugin/local_nextmoodle` の補助プラグインと契約v2の5関数が必須です。補助契約は任意HTMLを受け取らず、許可された操作と型付き表示ブロックに限定しています。補助サービスはインストール直後は無効なので、Moodle管理者が専用Web Serviceへ明示的に追加してください。
+専用Web Serviceへ、利用する標準 Moodle 関数だけを許可してください。権限のない機能は画面上で明示的に無効になります。標準 API で安全に操作できない活動は、同一 Moodle オリジンの検証済み活動 URL を別タブで開きます。
 
 接続診断は、補助契約だけでなく公開コースの活動種別を横断確認します。公式アダプターまたは補助アダプターに解決できない活動が1件でもあればReadyにせず、活動名や学生データを出さずにモジュール種別と件数だけを表示します。
 

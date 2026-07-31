@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  ArrowSquareOut,
   CheckCircle,
   Circle,
   FileText,
@@ -11,13 +10,14 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { ReactNode } from "react";
 
-import { Badge, Notice } from "@/components/ui";
+import { Badge, Notice, RichContent } from "@/components/ui";
 import { InspectorSheet } from "@/components/app-shell/inspector-sheet";
 import { ContextPanel } from "@/components/app-shell/context-panel";
 import { SharedTransition, TransitionLink } from "@/components/app-shell/transitions";
 import { PageFrame, RouteHeader, SectionIndex } from "@/components/app-shell/workspace-frame";
 import type { AppRuntimeConfig } from "@/lib/app-config";
 import { dateTimeFormatter } from "@/lib/date-time";
+import { isEmptyMoodleDocument } from "@/lib/moodle/html";
 import type {
   CourseActivity,
   CourseSubsection,
@@ -39,10 +39,8 @@ function ActivityAction({ activity }: Readonly<{ activity: CourseActivity }>): R
   switch (destination.kind) {
     case "internal":
       return <TransitionLink className="ui-course-activity__action" href={destination.href} intent="drill-in">開く <ArrowRight aria-hidden size={15} /></TransitionLink>;
-    case "moodle":
-      return <a className="ui-course-activity__action" href={destination.href} rel="noopener noreferrer" target="_blank">本家で続ける <ArrowSquareOut aria-hidden size={15} /></a>;
     case "disabled":
-      return <span className="ui-course-activity__locked"><LockSimple aria-hidden size={15} />{destination.reason === "adapter_required" ? "アダプター待ち" : "利用不可"}</span>;
+      return <span className="ui-course-activity__locked"><LockSimple aria-hidden size={15} />利用不可</span>;
     default:
       return assertNever(destination);
   }
@@ -104,7 +102,7 @@ export function CourseDetail({ config, data }: Readonly<{
               {data.sections.map((section) => (
                 <section id={`section-${section.id}`} key={section.id}>
                   <header><h2>{section.name}</h2><span>{section.items.length}</span></header>
-                  {section.summary === "" ? null : <div className="ui-course-section__summary ui-rich-content" dangerouslySetInnerHTML={{ __html: section.summary }} />}
+                  {isEmptyMoodleDocument(section.summary) ? null : <RichContent className="ui-course-section__summary ui-rich-content" document={section.summary} />}
                   {section.items.length === 0 ? (
                     <p className="ui-course-section__empty">公開中の教材はありません。</p>
                   ) : (
@@ -112,7 +110,7 @@ export function CourseDetail({ config, data }: Readonly<{
                       {section.items.map((item) => item.kind === "label" ? (
                         <article className="ui-course-label" key={item.id}>
                           <span>{item.title}</span>
-                          {item.content === "" ? null : <div className="ui-rich-content" dangerouslySetInnerHTML={{ __html: item.content }} />}
+                          {isEmptyMoodleDocument(item.content) ? null : <RichContent className="ui-rich-content" document={item.content} />}
                         </article>
                       ) : item.kind === "subsection" ? (
                         <SubsectionMarker item={item} key={item.id} />
@@ -131,13 +129,10 @@ export function CourseDetail({ config, data }: Readonly<{
                               <small>{item.typeLabel}{item.dueAt === undefined ? "" : ` · ${dateFormat.format(new Date(item.dueAt * 1_000))}`}</small>
                             </span>
                             {item.availability !== "available" ? <Badge tone="warning">利用制限</Badge> : null}
-                            {item.adapterState === "companion" ? <Badge tone="accent">拡張対応</Badge> : null}
-                            {item.delivery === "runtime" ? <Badge tone="info">隔離実行</Badge> : null}
-                            {item.adapterState === "adapter_required" ? <Badge tone="info">アダプターが必要</Badge> : null}
-                            {item.adapterState === "unavailable" ? <WarningCircle aria-label="API未許可" className="ui-course-activity__warning" size={18} /> : null}
+                            {item.supportState === "html" ? <Badge tone="info">アプリ内HTML</Badge> : null}
                             <ActivityAction activity={item} />
                           </div>
-                          {item.description === "" ? null : <div className="ui-course-activity__description ui-rich-content" dangerouslySetInnerHTML={{ __html: item.description }} />}
+                          {isEmptyMoodleDocument(item.description) ? null : <RichContent className="ui-course-activity__description ui-rich-content" document={item.description} />}
                           {item.files.length === 0 ? null : <ul className="ui-course-activity__files">{item.files.map((file) => <li key={`${file.filename}:${file.filesize}`}>{file.downloadUrl === null ? <span>{file.filename}</span> : <a href={file.downloadUrl}><DownloadSimple aria-hidden size={16} />{file.filename}</a>}<small>{file.mimetype}</small></li>)}</ul>}
                         </article>
                       ))}

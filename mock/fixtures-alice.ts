@@ -98,7 +98,7 @@ const sections: readonly FixtureSection[] = [
         name: "Field notes submission link",
         modname: "url",
         instance: 522,
-        url: `${siteOrigin}/mod/assign/view.php?id=9101`,
+        url: `${siteOrigin}/mod/url/view.php?id=9122`,
         visible: true,
         uservisible: true,
         completion: 0,

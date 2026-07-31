@@ -1,4 +1,4 @@
-import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
 
 export type WorkshopPhase = Readonly<{
   key: "closed" | "evaluation" | "setup" | "submission" | "assessment" | "unknown";
@@ -17,11 +17,11 @@ export type WorkshopActivityData = Readonly<{
   canCreate: boolean;
   canModify: boolean;
   id: number;
-  instructions: SanitizedMoodleHtml;
+  instructions: MoodleDocument;
   name: string;
   phase: WorkshopPhase;
   submissions: readonly Readonly<{
-    content: SanitizedMoodleHtml;
+    content: MoodleDocument;
     id: number;
     timeCreated: number;
     timeModified: number;
@@ -62,11 +62,11 @@ export function projectWorkshopActivity(input: Readonly<{
     canCreate: input.canCreate,
     canModify: input.canModify,
     id: input.id,
-    instructions: sanitizeMoodleHtml(input.instructions, { siteUrl: input.siteUrl }),
+    instructions: moodleDocumentFromHtml(input.instructions, { siteUrl: input.siteUrl }),
     name: input.name,
     phase: projectWorkshopPhase(input.phase),
     submissions: input.submissions.map((submission) => ({
-      content: sanitizeMoodleHtml(submission.content ?? "", { siteUrl: input.siteUrl }),
+      content: moodleDocumentFromHtml(submission.content ?? "", { siteUrl: input.siteUrl }),
       id: submission.id,
       timeCreated: submission.timecreated,
       timeModified: submission.timemodified,

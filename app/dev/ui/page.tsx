@@ -6,7 +6,6 @@ import { FeedbackShowcase } from "./feedback-showcase";
 import { FieldShowcase } from "./field-showcase";
 import { SubmissionShowcase } from "./submission-showcase";
 import { EditorialNativeShowcase } from "./ink-workspace-showcase";
-import { QuestionnaireShowcase } from "./questionnaire-showcase";
 import styles from "./showcase.module.css";
 
 export const metadata: Metadata = {
@@ -58,7 +57,6 @@ export default function DevUiPage() {
       <FieldShowcase />
       <FeedbackShowcase />
       <SubmissionShowcase />
-      <QuestionnaireShowcase />
 
       <footer className={styles.footer}>
         <span>Editorial Native primitives</span>

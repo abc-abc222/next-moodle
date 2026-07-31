@@ -5,7 +5,7 @@ import ky from "ky";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, Notice, Textarea } from "@/components/ui";
+import { Button, Notice, RichContent, Textarea } from "@/components/ui";
 import type { WikiActivityData } from "@/lib/moodle/activities/wiki-model";
 
 export function WikiWorkspace({ cmid, data }: Readonly<{
@@ -57,7 +57,7 @@ export function WikiWorkspace({ cmid, data }: Readonly<{
       <header><div><span className="ui-kicker">Collaborative document</span><h2 id="wiki-title">Wiki</h2></div><span>{data.pages.length}ページ</span></header>
       {data.pages.length === 0 ? <Notice title="Wikiページはありません" tone="info"><p>最初のページが作成されると、ここへ表示されます。</p></Notice> : (
         <div className="ui-wiki-pages">
-          {data.pages.map((page, index) => <article key={page.id}><header><span className="ui-tabular">{String(index + 1).padStart(2, "0")}</span><h3>{page.title}</h3>{page.canEdit ? <button disabled={pending} onClick={() => void beginEdit(page.id)} type="button"><PencilSimple aria-hidden size={16} />編集</button> : null}</header>{editing?.pageId === page.id ? <form onSubmit={(event) => void save(event)}><Textarea defaultValue={editing.content} id={`wiki-content-${page.id}`} label={`${page.title}の本文`} maxLength={100_000} name="content" required rows={14} /><div><Button disabled={pending} type="submit"><FloppyDisk aria-hidden size={17} />{pending ? "保存中" : "保存"}</Button><Button onClick={() => setEditing(null)} type="button" variant="secondary">キャンセル</Button></div></form> : <div className="ui-rich-content" dangerouslySetInnerHTML={{ __html: page.content }} />}</article>)}
+          {data.pages.map((page, index) => <article key={page.id}><header><span className="ui-tabular">{String(index + 1).padStart(2, "0")}</span><h3>{page.title}</h3>{page.canEdit ? <button disabled={pending} onClick={() => void beginEdit(page.id)} type="button"><PencilSimple aria-hidden size={16} />編集</button> : null}</header>{editing?.pageId === page.id ? <form onSubmit={(event) => void save(event)}><Textarea defaultValue={editing.content} id={`wiki-content-${page.id}`} label={`${page.title}の本文`} maxLength={100_000} name="content" required rows={14} /><div><Button disabled={pending} type="submit"><FloppyDisk aria-hidden size={17} />{pending ? "保存中" : "保存"}</Button><Button onClick={() => setEditing(null)} type="button" variant="secondary">キャンセル</Button></div></form> : <RichContent className="ui-rich-content" document={page.content} />}</article>)}
         </div>
       )}
       <span aria-live="polite" className="ui-form-error">{error ? "Wikiを更新できませんでした。編集内容は保持されています。" : ""}</span>

@@ -11,9 +11,9 @@ import {
   type MoodleUserId,
 } from "@/lib/moodle/server";
 import type { CapabilityDelivery, MoodleCapabilityManifest } from "@/lib/moodle/capabilities";
-import { resolveActivityAdapter, resolveActivityDelivery } from "@/lib/moodle/activities/registry";
+import { resolveActivity, resolveActivityDelivery } from "@/lib/moodle/activities/registry";
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
-import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
 import { moodleFileProxyPath } from "@/lib/security/moodle-file";
 import {
   activityDestination,
@@ -35,11 +35,11 @@ export type CommandCourse = {
 
 export type CourseActivity = {
   readonly kind: "activity";
-  readonly adapterState: "native" | "companion" | "adapter_required" | "unavailable";
+  readonly supportState: "api" | "html" | "runtime";
   readonly delivery: CapabilityDelivery;
   readonly availability: "available" | "hidden" | "restricted";
   readonly completion: "complete" | "incomplete" | "none";
-  readonly description: SanitizedMoodleHtml;
+  readonly description: MoodleDocument;
   readonly destination: ActivityDestination;
   readonly dueAt?: number;
   readonly files: readonly Readonly<{
@@ -63,7 +63,7 @@ export type CourseSubsection = Readonly<{
 }>;
 
 export type CourseInlineLabel = Readonly<{
-  content: SanitizedMoodleHtml;
+  content: MoodleDocument;
   id: number;
   kind: "label";
   title: string;
@@ -82,7 +82,7 @@ export type CourseSection = {
   readonly id: number;
   readonly items: readonly CourseStreamItem[];
   readonly name: string;
-  readonly summary: SanitizedMoodleHtml;
+  readonly summary: MoodleDocument;
 };
 
 export type CourseDetail = {
@@ -90,7 +90,7 @@ export type CourseDetail = {
   readonly sections: readonly CourseSection[];
 };
 
-export type CourseAdapterDiagnostic = Readonly<{
+export type CourseSupportDiagnostic = Readonly<{
   count: number;
   moduleType: string;
 }>;
@@ -133,11 +133,10 @@ export const readCourses = cache(
   },
 );
 
-export const readCourseAdapterDiagnostics = cache(
+export const readCourseSupportDiagnostics = cache(
   async (
     userId: MoodleUserId,
-    manifest: MoodleCapabilityManifest,
-  ): Promise<MoodleReadResult<readonly CourseAdapterDiagnostic[]>> => {
+  ): Promise<MoodleReadResult<readonly CourseSupportDiagnostic[]>> => {
     const enrolled = await readEnrolledCourses(userId);
     if (enrolled.kind === "failure") return enrolled;
     try {
@@ -154,10 +153,7 @@ export const readCourseAdapterDiagnostics = cache(
           if (section.visible === 0) continue;
           for (const courseModule of section.modules) {
             if (isInlineCourseLabel(courseModule)) continue;
-            const resolution = resolveActivityAdapter(courseModule.modname, manifest);
-            const resolvedByCompanion = resolution.kind === "adapter_required" &&
-              manifest.companionModules.includes(courseModule.modname);
-            if (courseModule.integrity !== "malformed" && (resolution.kind === "native" || resolvedByCompanion)) continue;
+            if (courseModule.integrity !== "malformed") continue;
             unresolved.set(courseModule.modname, (unresolved.get(courseModule.modname) ?? 0) + 1);
           }
         }
@@ -232,7 +228,7 @@ export const readCourseDetail = cache(
         for (const courseModule of section.modules) {
           if (isInlineCourseLabel(courseModule)) {
             items.push({
-              content: sanitizeMoodleHtml(courseModule.description ?? "", { siteUrl: request.siteUrl }),
+              content: moodleDocumentFromHtml(courseModule.description ?? "", { siteUrl: request.siteUrl }),
               id: courseModule.id,
               kind: "label",
               title: courseModule.name,
@@ -257,15 +253,13 @@ export const readCourseDetail = cache(
             });
             continue;
           }
-          const resolution = resolveActivityAdapter(courseModule.modname, request.manifest);
-          const hasCompanionAdapter = resolution.kind === "adapter_required" &&
-            request.manifest.companionModules.includes(courseModule.modname);
+          const resolution = resolveActivity(courseModule.modname, request.manifest);
           const dueAt = courseModule.dates?.find((date) =>
             date.dataid?.toLowerCase().includes("due") === true ||
             date.label.toLowerCase().includes("due") || date.label.includes("期限"),
           )?.timestamp;
           items.push({
-            adapterState: hasCompanionAdapter ? "companion" : resolution.kind,
+            supportState: resolution.kind,
             delivery: resolveActivityDelivery(courseModule.modname, request.manifest),
             availability: courseModule.visible === 0
               ? "hidden"
@@ -273,10 +267,8 @@ export const readCourseDetail = cache(
             completion: courseModule.completion === undefined || courseModule.completion === 0
               ? "none"
               : (courseModule.completiondata?.state ?? 0) > 0 ? "complete" : "incomplete",
-            description: sanitizeMoodleHtml(courseModule.description ?? "", { siteUrl: request.siteUrl }),
-            destination: hasCompanionAdapter
-              ? { kind: "internal", href: `/activities/${courseModule.id}` }
-              : activityDestination(courseModule, request.siteUrl),
+            description: moodleDocumentFromHtml(courseModule.description ?? "", { siteUrl: request.siteUrl }),
+            destination: activityDestination(courseModule),
             ...(dueAt === undefined ? {} : { dueAt }),
             files: (courseModule.contents ?? []).map((file) => ({
               downloadUrl: file.fileurl === undefined ? null : moodleFileProxyPath(file.fileurl, request.siteUrl),
@@ -289,8 +281,8 @@ export const readCourseDetail = cache(
             kind: "activity",
             moduleType: courseModule.modname,
             name: courseModule.name,
-            typeLabel: resolution.kind === "native"
-              ? resolution.adapter.label
+            typeLabel: resolution.kind === "api"
+              ? resolution.definition.label
               : courseModule.modname === "questionnaire" ? "アンケート" : courseModule.modname,
           });
         }
@@ -298,7 +290,7 @@ export const readCourseDetail = cache(
           id: section.id,
           items,
           name: section.name,
-          summary: sanitizeMoodleHtml(section.summary ?? "", { siteUrl: request.siteUrl }),
+          summary: moodleDocumentFromHtml(section.summary ?? "", { siteUrl: request.siteUrl }),
         });
       }
       return {

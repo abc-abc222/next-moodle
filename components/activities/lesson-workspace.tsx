@@ -5,7 +5,7 @@ import ky from "ky";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, Notice } from "@/components/ui";
+import { Button, Notice, RichContent } from "@/components/ui";
 import type { LessonActivityData } from "@/lib/moodle/activities/lesson-model";
 
 export function LessonWorkspace({ cmid, data }: Readonly<{
@@ -52,7 +52,7 @@ export function LessonWorkspace({ cmid, data }: Readonly<{
     <section className="ui-lesson" aria-labelledby="lesson-title">
       <header><div><span className="ui-kicker">Guided learning</span><h2 id="lesson-title">レッスン</h2></div>{data.progress === null ? null : <span>{data.progress}%</span>}</header>
       {data.progress === null ? null : <div aria-label={`進捗 ${data.progress}%`} className="ui-lesson-progress" role="progressbar" aria-valuemax={100} aria-valuemin={0} aria-valuenow={data.progress}><span style={{ inlineSize: `${data.progress}%` }} /></div>}
-      {completed ? <Notice title="レッスンを完了しました" tone="success"><p>学習結果はMoodleへ保存されています。</p></Notice> : data.pageId === null ? <div className="ui-feedback-launch"><p>ページを順番に進み、各設問へ回答します。</p><Button disabled={pending} onClick={() => void start()}><Play aria-hidden size={17} />{pending ? "開始中" : "レッスンを開始"}</Button></div> : <form onSubmit={(event) => void answer(event)}><div className="ui-lesson-content ui-rich-content" dangerouslySetInnerHTML={{ __html: data.content }} /><footer><span>{pending ? "保存中" : "回答は次へ進むと保存されます"}</span><Button disabled={pending} type="submit">回答して次へ<ArrowRight aria-hidden size={17} /></Button></footer></form>}
+      {completed ? <Notice title="レッスンを完了しました" tone="success"><p>学習結果はMoodleへ保存されています。</p></Notice> : data.pageId === null ? <div className="ui-feedback-launch"><p>ページを順番に進み、各設問へ回答します。</p><Button disabled={pending} onClick={() => void start()}><Play aria-hidden size={17} />{pending ? "開始中" : "レッスンを開始"}</Button></div> : <form onSubmit={(event) => void answer(event)}><RichContent className="ui-lesson-content ui-rich-content" document={data.content} /><footer><span>{pending ? "保存中" : "回答は次へ進むと保存されます"}</span><Button disabled={pending} type="submit">回答して次へ<ArrowRight aria-hidden size={17} /></Button></footer></form>}
       <span aria-live="polite" className="ui-form-error">{error ? "レッスンを更新できませんでした。回答内容は保持されています。" : ""}</span>
       {completed ? <CheckCircle aria-hidden className="ui-lesson-complete" size={22} weight="fill" /> : null}
     </section>

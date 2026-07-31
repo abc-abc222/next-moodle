@@ -1,4 +1,4 @@
-import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
 
 export type DatabaseFieldWire = Readonly<{
   description: string;
@@ -20,7 +20,7 @@ export type DatabaseField = Readonly<{
 
 export type DatabaseActivityData = Readonly<{
   canAdd: boolean;
-  entriesHtml: SanitizedMoodleHtml;
+  entries: MoodleDocument;
   fields: readonly DatabaseField[];
   id: number;
   name: string;
@@ -73,7 +73,7 @@ export function projectDatabaseActivity(input: Readonly<{
 }>): DatabaseActivityData {
   return {
     canAdd: input.canAdd,
-    entriesHtml: sanitizeMoodleHtml(input.entriesHtml, { siteUrl: input.siteUrl }),
+    entries: moodleDocumentFromHtml(input.entriesHtml, { siteUrl: input.siteUrl }),
     fields: projectDatabaseFields(input.fields),
     id: input.id,
     name: input.name,

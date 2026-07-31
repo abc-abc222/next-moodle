@@ -5,7 +5,7 @@ import ky from "ky";
 import { useRouter } from "next/navigation";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 
-import { Button, Notice } from "@/components/ui";
+import { Button, Notice, RichContent } from "@/components/ui";
 import type { QuizActivityData, QuizQuestion } from "@/lib/moodle/activities/quiz";
 
 type SaveState = "idle" | "saving" | "saved" | "forbidden" | "error";
@@ -198,7 +198,7 @@ export function QuizWorkspace({ cmid, data }: Readonly<{ cmid: number; data: Qui
       {saveState === "error" ? <Notice action={<Button onClick={() => void save()} size="compact" variant="secondary">再試行</Button>} title="回答を保存できません" tone="error" urgent><p>入力はこの画面に残っています。通信を確認して再試行してください。</p></Notice> : null}
       {actionError === null ? null : <Notice title={actionError === "forbidden" ? "アクセスが禁止されています" : "回答を提出できません"} tone={actionError === "forbidden" ? "warning" : "error"} urgent><p>{actionError === "forbidden" ? "この小テストを更新する権限がありません。" : "Moodleとの通信中に問題が発生しました。入力は保持されています。"}</p></Notice>}
       <div className="ui-quiz-questions">
-        {active.questions.map((question) => <article className="ui-quiz-question" key={question.slot}><header className="ui-quiz-question__meta"><h3>問題 {question.slot}</h3><div><span>{questionStatus(question)}</span>{question.maximumMark === null ? null : <small>{question.maximumMark}</small>}</div></header><div className="ui-quiz-question__body" dangerouslySetInnerHTML={{ __html: question.html }} /></article>)}
+        {active.questions.map((question) => <article className="ui-quiz-question" key={question.slot}><header className="ui-quiz-question__meta"><h3>問題 {question.slot}</h3><div><span>{questionStatus(question)}</span>{question.maximumMark === null ? null : <small>{question.maximumMark}</small>}</div></header><RichContent className="ui-quiz-question__body" document={question.document} /></article>)}
       </div>
       <footer className="ui-quiz-actions">
         <Button disabled={active.page === 0 || pendingAction !== null} onClick={() => void move(active.page - 1)} type="button" variant="secondary"><ArrowLeft aria-hidden size={17} />前へ</Button>

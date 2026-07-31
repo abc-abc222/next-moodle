@@ -40,14 +40,22 @@ export const MoodleSiteSchema = z.object({
 });
 export type MoodleSite = Readonly<z.infer<typeof MoodleSiteSchema>>;
 
+export const MoodleUiSessionSchema = z.object({
+  cookieName: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+  cookieValue: z.string().min(1).max(512).refine((value) => !/[;\r\n]/.test(value)),
+  expiresAt: z.number().int().nonnegative(),
+});
+export type MoodleUiSession = Readonly<z.infer<typeof MoodleUiSessionSchema>>;
+
 export const MoodleSessionSchema = z.object({
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
   token: MoodleTokenSchema,
   service: MoodleServiceSchema,
   userId: MoodleUserIdSchema,
   expiresAt: z.number().int().nonnegative(),
   site: MoodleSiteSchema,
   manifest: MoodleCapabilityManifestSchema,
+  uiSession: MoodleUiSessionSchema,
 });
 export type MoodleSession = Readonly<z.infer<typeof MoodleSessionSchema>>;
 
@@ -68,16 +76,6 @@ function canonicalSiteUrl(value: string): string {
 export function toSafeSiteInfo(
   wire: MoodleSiteInfoWire,
   config: MoodleConfig,
-  options: Readonly<{
-    companion: Readonly<{
-      adapters: readonly Readonly<{ moduleName: string; operations: readonly string[] }>[];
-      contractVersion: number;
-    }>;
-    requireCompanion: boolean;
-  }> = {
-    companion: { adapters: [], contractVersion: 0 },
-    requireCompanion: false,
-  },
 ): SafeSiteInfo {
   const returnedUrl = canonicalSiteUrl(wire.siteurl);
   if (returnedUrl !== canonicalSiteUrl(config.baseUrl)) {
@@ -93,14 +91,12 @@ export function toSafeSiteInfo(
       siteUrl: returnedUrl,
     },
     manifest: deriveCapabilityManifest({
-      companion: options.companion,
       fileAccess: {
         download: wire.downloadfiles,
         upload: wire.uploadfiles,
       },
       functionNames,
       moodleRelease: wire.release,
-      requireCompanion: options.requireCompanion,
     }),
   };
 }

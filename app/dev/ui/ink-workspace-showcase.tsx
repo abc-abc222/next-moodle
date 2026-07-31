@@ -77,7 +77,7 @@ export function EditorialNativeShowcase() {
         <ShowcaseSample label="Capability states">
           <div className={styles.capabilityRows}>
             <span><i data-state="available" />公式API</span>
-            <span><i data-state="adapter" />アダプターが必要</span>
+            <span><i data-state="html" />HTMLから独自UI</span>
             <span><i data-state="unavailable" />API未許可</span>
           </div>
         </ShowcaseSample>

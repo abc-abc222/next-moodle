@@ -10,8 +10,6 @@ import { readFeedbackActivity } from "@/lib/moodle/activities/feedback";
 import { readForumActivity } from "@/lib/moodle/activities/forum";
 import { readGlossaryActivity } from "@/lib/moodle/activities/glossary";
 import { readLessonActivity } from "@/lib/moodle/activities/lesson";
-import { readLaunchActivity } from "@/lib/moodle/activities/launch";
-import { assignmentDestinationFromTrustedMoodleUrl } from "@/lib/moodle/activities/launch-model";
 import type { NativeActivityData } from "@/lib/moodle/activities/native";
 import { MoodleResponseError } from "@/lib/moodle/errors";
 import { readQuizActivity } from "@/lib/moodle/activities/quiz";
@@ -51,14 +49,8 @@ export default async function ActivityPage({ params, searchParams }: ActivityPag
   if (result.data.availability !== "available") {
     forbidden();
   }
-  if (result.data.moduleType === "assign") {
+  if (result.data.moduleType === "assign" && result.data.resolution.kind === "api") {
     redirect(`/assignments/${cmid.data}`);
-  }
-  if (result.data.moduleType === "url") {
-    const destination = assignmentDestinationFromTrustedMoodleUrl(result.data.sourceUrl);
-    if (destination !== null) {
-      redirect(destination);
-    }
   }
   const query = await searchParams;
   const requestedPage = Number(query.page ?? "0");
@@ -127,25 +119,6 @@ export default async function ActivityPage({ params, searchParams }: ActivityPag
     const workshopResult = await readWorkshopActivity({ cmid: cmid.data, courseId: result.data.course.id, instance: result.data.instance, siteUrl: session.site.siteUrl, userId: session.userId });
     if (workshopResult.kind === "failure") return <StateNotice reason={resolveMoodlePageFailure(workshopResult.reason)} retryHref={`/activities/${cmid.data}`} siteUrl={session.site.siteUrl} />;
     native = { kind: "workshop", data: requireNativeData(workshopResult.data) };
-  } else {
-    const launchFeatureAvailable = result.data.moduleType === "url"
-      || (result.data.moduleType === "scorm" && session.manifest.features.scorm === "available")
-      || (result.data.moduleType === "h5pactivity" && session.manifest.features.h5p === "available")
-      || (result.data.moduleType === "lti" && session.manifest.features.lti === "available")
-      || (result.data.moduleType === "bigbluebuttonbn" && session.manifest.features.bigBlueButton === "available");
-    if (launchFeatureAvailable) {
-      const launchResult = await readLaunchActivity({
-        cmid: cmid.data,
-        courseId: result.data.course.id,
-        instance: result.data.instance,
-        moduleType: result.data.moduleType,
-        name: result.data.name,
-        sourceUrl: result.data.sourceUrl,
-        userId: session.userId,
-      });
-      if (launchResult.kind === "failure") return <StateNotice reason={resolveMoodlePageFailure(launchResult.reason)} retryHref={`/activities/${cmid.data}`} siteUrl={session.site.siteUrl} />;
-      native = { kind: "launch", data: requireNativeData(launchResult.data) };
-    }
   }
   return <ActivityWorkspace
     canUpdateCompletion={session.manifest.features.completionUpdate === "available"}

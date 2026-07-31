@@ -2,6 +2,7 @@
 @import "../components/ui/actions.css";
 @import "../components/ui/content.css";
 @import "../components/ui/feedback.css";
+@import "../components/activities/activities.css";
 @import "../components/assignments/assignments.css";
 
 :root {

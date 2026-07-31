@@ -85,16 +85,13 @@ describe("iron-session Moodle cookie", () => {
     expect(parsed).toBeNull();
   });
 
-  test("normalizes a version three capability manifest without logging out an active learner", () => {
+  test("rejects a version three session after UI session authentication was added", () => {
     const currentSession = fixtureSession("fixture-legacy-v3", 44);
-    const legacyValue = {
-      ...currentSession,
-      manifest: { ...currentSession.manifest, version: 3 },
-    };
+    const legacyValue = { ...currentSession, schemaVersion: 3 };
 
     const parsed = parseActiveMoodleSession(legacyValue);
 
-    expect(parsed?.manifest.version).toBe(4);
+    expect(parsed).toBeNull();
   });
 
   test("encrypts each user's token into an isolated secure cookie", async () => {

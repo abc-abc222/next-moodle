@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
 
 const MoodleBooleanSchema = z.union([z.boolean(), z.number().int().min(0).max(1)])
   .transform((value) => value === true || value === 1);
@@ -25,7 +25,7 @@ export type WikiActivityData = Readonly<{
   name: string;
   pages: readonly Readonly<{
     canEdit: boolean;
-    content: SanitizedMoodleHtml;
+    content: MoodleDocument;
     createdAt: number;
     id: number;
     title: string;
@@ -50,7 +50,7 @@ export function projectWikiActivity(input: Readonly<{
       const page = WikiPageWireSchema.parse(raw);
       return {
         canEdit: page.caneditpage && !page.readonly,
-        content: sanitizeMoodleHtml(page.cachedcontent, { siteUrl: input.siteUrl }),
+        content: moodleDocumentFromHtml(page.cachedcontent, { siteUrl: input.siteUrl }),
         createdAt: page.timecreated,
         id: page.id,
         title: page.title,

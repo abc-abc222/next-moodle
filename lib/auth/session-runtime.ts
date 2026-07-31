@@ -4,6 +4,7 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 
 import { MoodleClient } from "../moodle/client";
+import { MoodlePageClient } from "../moodle/page-client";
 import { MoodleAuthError, MoodleConfigurationError } from "../moodle/errors";
 import type { MoodleSession } from "../moodle/site";
 import { IronCookieStoreAdapter } from "./iron-cookie-store";
@@ -67,4 +68,8 @@ export async function createAuthenticatedMoodleClient(): Promise<MoodleClient> {
     },
     token: session.token,
   });
+}
+
+export async function createAuthenticatedMoodlePageClient(): Promise<MoodlePageClient> {
+  return new MoodlePageClient(await requireMoodleSession());
 }

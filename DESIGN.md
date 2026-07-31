@@ -70,7 +70,7 @@ Workspace modes remain fixed:
 - `ActionDock`: sticky save, send, submit, attempt, and network-state controls.
 - `DataRow`: index/icon, primary text, metadata, state, and trailing action without card chrome.
 - `Timeline`: date axis, current-time marker, event row, empty day, and overdue state.
-- `CapabilityNotice`: missing read/action capability, companion required, denied, malformed response, outage, and expired session.
+- `CapabilityNotice`: missing read/action capability, denied, malformed response, outage, and expired session.
 
 Every primitive exposes default, hover, pressed, focus-visible, selected, disabled, loading, empty, error, long-content, and reduced-motion behavior in `/dev/ui` before release.
 
@@ -90,9 +90,9 @@ Every primitive exposes default, hover, pressed, focus-visible, selected, disabl
 
 ## 7. Moodle replacement contract
 
-The redesign does not change Moodle DTOs, server sessions, BFF routes, submission APIs, AI APIs, activity adapters, or the teacher-message API. Server Components continue to load Moodle data directly, while interactive leaves remain Client Components.
+The redesign does not change Moodle DTOs, server sessions, BFF routes, submission APIs, AI APIs, or the teacher-message API. Server Components continue to load Moodle data directly, while interactive leaves remain Client Components.
 
-`MoodleCapabilityManifestV3`, typed companion activity envelopes, authenticated file proxying, short-lived runtime tickets, and the no-Moodle-navigation fallback policy remain binding. Malformed activities stay isolated to their own rows.
+`MoodleCapabilityManifestV5`, typed Moodle screen/document models, authenticated file proxying, and the fixed-origin HTML conversion boundary remain binding. Malformed activities stay isolated to their own rows.
 
 ## 8. Accessibility, personas, and accepted debt
 
@@ -100,4 +100,4 @@ Primary personas are a keyboard-first student triaging deadlines, a mobile stude
 
 Visual QA covers 375, 768, 1280, and 1600px in dark and light themes, long Japanese text, empty and malformed data, touch, keyboard, reduced motion, focus restoration, and 200% zoom. Production Chrome is the measurement surface.
 
-Accepted deployment debt remains external: complete replacement readiness requires the configured Moodle companion contract to resolve every public third-party activity. No visual or accessibility debt is accepted for the Editorial Native implementation.
+Accepted deployment debt remains external: API-unsupported third-party activity execution remains in Moodle itself. No visual or accessibility debt is accepted for the Editorial Native implementation.

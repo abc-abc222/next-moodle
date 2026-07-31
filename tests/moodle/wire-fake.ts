@@ -1,4 +1,5 @@
 export type WireRequest = {
+  readonly headers: Headers;
   readonly method: string;
   readonly path: string;
   readonly form: URLSearchParams;
@@ -22,6 +23,7 @@ export function startWireMoodle(handler: WireHandler): WireMoodle {
     port: 0,
     async fetch(request) {
       const wireRequest = {
+        headers: request.headers,
         method: request.method,
         path: new URL(request.url).pathname,
         form: new URLSearchParams(await request.text()),
@@ -42,4 +44,10 @@ export function startWireMoodle(handler: WireHandler): WireMoodle {
 
 export function jsonResponse(body: unknown, status = 200): Response {
   return Response.json(body, { status });
+}
+
+export function htmlResponse(body: string, init: ResponseInit = {}): Response {
+  const headers = new Headers(init.headers);
+  headers.set("content-type", "text/html; charset=utf-8");
+  return new Response(body, { ...init, headers });
 }

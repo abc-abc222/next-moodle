@@ -64,12 +64,6 @@ export function readMoodleConfig(
   });
 }
 
-export function readMoodleRequireCompanion(
-  environment: Readonly<Record<string, string | undefined>> = process.env,
-): boolean {
-  return environment.MOODLE_REQUIRE_COMPANION === "true";
-}
-
 function endpoint(config: MoodleConfig, path: string): URL {
   const base = new URL(`${config.baseUrl}/`);
   return new URL(path, base);

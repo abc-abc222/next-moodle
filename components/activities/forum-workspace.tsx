@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, Field, Notice, Textarea } from "@/components/ui";
+import { Button, Field, Notice, RichContent, Textarea } from "@/components/ui";
 import type { ForumActivityData } from "@/lib/moodle/activities/forum";
 
 export function ForumWorkspace({ cmid, data, locale, timeZone }: Readonly<{
@@ -76,7 +76,7 @@ export function ForumWorkspace({ cmid, data, locale, timeZone }: Readonly<{
         <div className="ui-forum-thread">
           {selected === undefined ? <Notice title="ディスカッションを選択" tone="info"><p>一覧から会話を開いてください。</p></Notice> : <>
             <div className="ui-forum-thread__title"><div><h3>{selected.subject}</h3><span>{selected.locked ? "返信不可" : `${selected.numreplies}件の返信`}</span></div><div>{data.operations.markRead && selected.numunread > 0 ? <Button disabled={pending} onClick={() => void updateDiscussion("read")} variant="ghost"><Check aria-hidden size={16} />既読にする</Button> : null}{data.operations.subscribe ? <Button disabled={pending} onClick={() => void updateDiscussion("subscribe", !selected.subscribed)} variant="ghost">{selected.subscribed ? <BellSlash aria-hidden size={16} /> : <Bell aria-hidden size={16} />}{selected.subscribed ? "購読解除" : "購読"}</Button> : null}</div></div>
-            <ol>{data.posts.map((post) => <li data-unread={post.unread} key={post.id}><div><span className="ui-avatar" aria-hidden>{post.author.slice(0, 1)}</span><span><strong>{post.author}</strong><small>{post.created === 0 ? "" : dateTime.format(new Date(post.created * 1_000))}</small></span></div><h4>{post.subject}</h4><div className="ui-rich-content" dangerouslySetInnerHTML={{ __html: post.message }} /></li>)}</ol>
+            <ol>{data.posts.map((post) => <li data-unread={post.unread} key={post.id}><div><span className="ui-avatar" aria-hidden>{post.author.slice(0, 1)}</span><span><strong>{post.author}</strong><small>{post.created === 0 ? "" : dateTime.format(new Date(post.created * 1_000))}</small></span></div><h4>{post.subject}</h4><RichContent className="ui-rich-content" document={post.message} /></li>)}</ol>
             {data.operations.reply && selected.canreply && replyTarget !== undefined && !selected.locked ? <form className="ui-forum-composer" onSubmit={(event) => void submit(event, "reply")}><Field id="forum-reply-subject" label="件名" maxLength={200} name="subject" required value={`Re: ${selected.subject}`} readOnly /><Textarea id="forum-reply-message" label="返信" maxLength={20_000} name="message" required rows={4} /><Button disabled={pending} type="submit"><PaperPlaneTilt aria-hidden size={17} />{pending ? "送信中" : "返信を投稿"}</Button></form> : null}
           </>}
         </div>

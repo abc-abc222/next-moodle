@@ -57,13 +57,14 @@ export function createMoodleSession(
   now = Date.now(),
 ): MoodleSession {
   return MoodleSessionSchema.parse({
-    schemaVersion: 3,
+    schemaVersion: 4,
     token: login.token,
     service: login.service,
     userId: login.userId,
     expiresAt: now + SESSION_TTL_SECONDS * 1_000,
     site: login.site,
     manifest: login.manifest,
+    uiSession: login.uiSession,
   });
 }
 
@@ -72,7 +73,7 @@ export function parseActiveMoodleSession(
   now = Date.now(),
 ): MoodleSession | null {
   const parsed = MoodleSessionSchema.safeParse(value);
-  if (!parsed.success || parsed.data.expiresAt <= now) {
+  if (!parsed.success || parsed.data.expiresAt <= now || parsed.data.uiSession.expiresAt <= now) {
     return null;
   }
   return parsed.data;

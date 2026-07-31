@@ -10,5 +10,6 @@ export type { NoticeTone } from "./notice";
 export { Skeleton } from "./skeleton";
 export { Surface } from "./surface";
 export type { SurfaceVariant } from "./surface";
+export { RichContent } from "./rich-content";
 export { ThemeControl, ThemeProvider } from "./theme-provider";
 export { Textarea } from "./textarea";

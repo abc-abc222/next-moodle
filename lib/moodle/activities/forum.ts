@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
-import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
 import type { MoodleCapabilityManifest } from "../capabilities";
 import { MOODLE_FUNCTIONS } from "../functions";
 import type { MoodleCourseId, MoodleCourseModuleId } from "../identifiers";
@@ -58,7 +58,7 @@ export type ForumPost = Readonly<{
   canReply: boolean;
   created: number;
   id: number;
-  message: SanitizedMoodleHtml;
+  message: MoodleDocument;
   subject: string;
   unread: boolean;
 }>;
@@ -132,7 +132,7 @@ export async function readForumActivity(
           canReply: post.canreply && request.manifest.operations["forum.reply"] === "available",
           created: post.timecreated ?? post.created ?? 0,
           id: post.id,
-          message: sanitizeMoodleHtml(post.message, { siteUrl: request.siteUrl }),
+          message: moodleDocumentFromHtml(post.message, { siteUrl: request.siteUrl }),
           subject: post.subject,
           unread: post.unread,
         })),

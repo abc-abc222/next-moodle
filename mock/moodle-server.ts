@@ -45,6 +45,8 @@ const createState = (): MoodleMockState => ({
     [FIXTURE_TOKENS.alice, "alice"],
     [FIXTURE_TOKENS.bob, "bob"],
   ]),
+  uiSessions: new Map(),
+  questionnaireResponses: new Map(),
   uploadItems: new Map(),
   submissions: new Map(),
   readNotifications: new Set(),

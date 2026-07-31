@@ -2,6 +2,7 @@ import "server-only";
 
 export {
   createAuthenticatedMoodleClient,
+  createAuthenticatedMoodlePageClient,
   destroyMoodleSession,
   loadOptionalMoodleSession,
   loadMoodleSession,

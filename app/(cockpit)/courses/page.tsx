@@ -7,6 +7,7 @@ import { requireMoodleSession } from "@/lib/auth/server";
 import { readCourses } from "@/lib/moodle/queries/courses";
 import { currentUnixSeconds } from "@/lib/moodle/now";
 import { readAppRuntimeConfig } from "@/lib/app-config";
+import { shouldUseHtmlDelivery, StudentHtmlScreen } from "@/components/student/student-html-screen";
 
 export const metadata: Metadata = { title: "コース" };
 
@@ -14,11 +15,10 @@ export default async function CoursesPage() {
   const session = await requireMoodleSession();
   const config = readAppRuntimeConfig();
   if (session.manifest.features.courses !== "available") {
-    return (
-      <PageFrame content={<StateNotice reason="capability" retryHref="/courses" siteUrl={session.site.siteUrl} />} header={<RouteHeader description="受講中と今後のコースを確認します。" eyebrow="コース索引" title="コース" />} mode="overview" />
-    );
+    return <StudentHtmlScreen description="受講中と今後のコースを確認します。" session={session} surface="courses" title="コース" />;
   }
   const result = await readCourses(session.userId, currentUnixSeconds());
+  if (result.kind === "failure" && shouldUseHtmlDelivery(result.reason)) return <StudentHtmlScreen description="受講中と今後のコースを確認します。" session={session} surface="courses" title="コース" />;
   return (
     <PageFrame
       content={result.kind === "ready" ? (

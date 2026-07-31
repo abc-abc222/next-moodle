@@ -186,6 +186,8 @@ export type MoodleMockState = {
   readonly createdEvents: Map<FixtureUserKey, readonly FixtureEvent[]>
   readonly deletedEvents: Set<string>
   readonly tokens: Map<string, FixtureUserKey>
+  readonly uiSessions: Map<string, FixtureUserKey>
+  readonly questionnaireResponses: Map<string, Readonly<Record<string, readonly string[]>>>
   readonly uploadItems: Map<number, MockUploadItem>
   readonly submissions: Map<string, MockSubmissionState>
   readonly readNotifications: Set<string>

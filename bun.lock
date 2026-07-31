@@ -12,6 +12,7 @@
         "@tiptap/starter-kit": "^3.28.0",
         "file-type": "^22.0.1",
         "geist": "^1.7.2",
+        "htmlparser2": "^10.1.0",
         "iron-session": "^8.0.4",
         "ky": "^2.0.2",
         "next": "16.2.11",

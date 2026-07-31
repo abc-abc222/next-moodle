@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const mockPort = process.env.MOODLE_MOCK_PORT ?? "28765";
+const appPort = process.env.NEXT_MOODLE_E2E_PORT ?? "3100";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   testMatch: "**/*.e2e.ts",
@@ -13,7 +16,7 @@ export default defineConfig({
   ],
   outputDir: "test-results/playwright-results",
   use: {
-    baseURL: "http://127.0.0.1:3100",
+    baseURL: `http://127.0.0.1:${appPort}`,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "retain-on-failure",
@@ -27,16 +30,16 @@ export default defineConfig({
   webServer: [
     {
       command: "bun mock/run.ts",
-      env: { MOODLE_MOCK_PORT: "28765" },
+      env: { MOODLE_MOCK_PORT: mockPort },
       gracefulShutdown: { signal: "SIGINT", timeout: 5_000 },
       reuseExistingServer: false,
       timeout: 120_000,
-      url: "http://127.0.0.1:28765/login/token.php",
+      url: `http://127.0.0.1:${mockPort}/login/token.php`,
     },
     {
-      command: "bun run dev --hostname 127.0.0.1 --port 3100",
+      command: `bun run dev --hostname 127.0.0.1 --port ${appPort}`,
       env: {
-        MOODLE_BASE_URL: "http://127.0.0.1:28765",
+        MOODLE_BASE_URL: `http://127.0.0.1:${mockPort}`,
         MOODLE_SERVICE: "moodle_mobile_app",
         NEXT_MOODLE_E2E_INSECURE_COOKIE: "1",
         NEXT_PUBLIC_DISABLE_REACT_DEVTOOLS: "1",
@@ -46,7 +49,7 @@ export default defineConfig({
       gracefulShutdown: { signal: "SIGINT", timeout: 5_000 },
       reuseExistingServer: false,
       timeout: 120_000,
-      url: "http://127.0.0.1:3100/login",
+      url: `http://127.0.0.1:${appPort}/login`,
     },
   ],
 });

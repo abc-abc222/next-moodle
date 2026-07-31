@@ -10,6 +10,7 @@ import {
 } from "@/lib/moodle/activities/wiki-model";
 import { projectFeedbackItems } from "@/lib/moodle/activities/feedback-model";
 import { extractLessonResponseNames } from "@/lib/moodle/activities/lesson-model";
+import { moodleQuizDocumentFromHtml } from "@/lib/moodle/html";
 import {
   encodeDatabaseFieldValue,
   projectDatabaseFields,
@@ -18,7 +19,6 @@ import {
   projectWorkshopPhase,
   workshopSubmissionQuery,
 } from "@/lib/moodle/activities/workshop-model";
-import { isSafeLaunchEndpoint } from "@/lib/moodle/activities/launch-model";
 
 describe("knowledge activities", () => {
   test("sanitizes glossary definitions and preserves write capability", () => {
@@ -40,7 +40,7 @@ describe("knowledge activities", () => {
       total: 1,
     });
     expect(projected.canAdd).toBe(true);
-    expect(projected.entries[0]?.definition).not.toContain("script");
+    expect(JSON.stringify(projected.entries[0]?.definition)).not.toContain("script");
   });
 
   test("sanitizes wiki content and keeps only editable page metadata", () => {
@@ -61,7 +61,7 @@ describe("knowledge activities", () => {
       siteUrl: "https://moodle.synthetic.invalid",
     });
     expect(projected.pages[0]?.canEdit).toBe(true);
-    expect(projected.pages[0]?.content).not.toContain("javascript:");
+    expect(JSON.stringify(projected.pages[0]?.content)).not.toContain("javascript:");
   });
 
   test("projects Moodle feedback item names and bounded choices", () => {
@@ -78,7 +78,7 @@ describe("knowledge activities", () => {
   });
 
   test("extracts only bounded response names from sanitized lesson controls", () => {
-    const names = extractLessonResponseNames('<input name="answer"><textarea name="answer[text]"></textarea><input name="bad value">');
+    const names = extractLessonResponseNames(moodleQuizDocumentFromHtml('<input name="answer"><textarea name="answer[text]"></textarea><input name="bad value">', { siteUrl: "https://moodle.example.test" }));
     expect(names).toEqual(["answer", "answer[text]"]);
   });
 
@@ -106,9 +106,4 @@ describe("knowledge activities", () => {
     });
   });
 
-  test("accepts only HTTPS launch endpoints", () => {
-    expect(isSafeLaunchEndpoint("https://tool.synthetic.invalid/launch")).toBe(true);
-    expect(isSafeLaunchEndpoint("http://tool.synthetic.invalid/launch")).toBe(false);
-    expect(isSafeLaunchEndpoint("javascript:alert(1)")).toBe(false);
-  });
 });

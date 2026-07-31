@@ -18,7 +18,7 @@ export function createSessionFixture(
 ): MoodleSession {
   const functions = options.functions ?? [];
   return MoodleSessionSchema.parse({
-    schemaVersion: 3,
+    schemaVersion: 4,
     token: options.token ?? "fixture-token",
     service: "fixture_service",
     userId: options.userId ?? 101,
@@ -34,5 +34,10 @@ export function createSessionFixture(
       },
       functionNames: functions,
     }),
+    uiSession: {
+      cookieName: "MoodleSession",
+      cookieValue: "fixture-ui-session",
+      expiresAt: options.expiresAt ?? Date.now() + 60_000,
+    },
   });
 }

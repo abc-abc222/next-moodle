@@ -17,6 +17,7 @@ import { loadNotifications } from "@/lib/moodle/queries/notifications";
 import type { NotificationsPageState } from "@/lib/moodle/queries/notifications-schema";
 
 import { NotificationsClient } from "@/components/notifications/notifications-client";
+import { StudentHtmlScreen } from "@/components/student/student-html-screen";
 import { readAppRuntimeConfig } from "@/lib/app-config";
 
 export const runtime = "nodejs";
@@ -49,28 +50,32 @@ function stateFromError(error: Error): NotificationsPageState {
 
 export default async function NotificationsPage() {
   const runtimeConfig = readAppRuntimeConfig();
+  const session = await requireMoodleSession();
+  if (session.manifest.features.notifications !== "available") {
+    return <StudentHtmlScreen description="フィードバックやお知らせを確認します。" session={session} surface="notifications" title="通知" />;
+  }
   let initialState: NotificationsPageState;
+  let useHtml = false;
   try {
-    const session = await requireMoodleSession();
-    if (session.manifest.features.notifications !== "available") {
-      initialState = { kind: "capability" };
-    } else {
-      const client = await createAuthenticatedMoodleClient();
-      initialState = {
-        kind: "ready",
-        data: await loadNotifications(
-          client,
-          session.userId,
-          session.site.siteUrl,
-        ),
-      };
-    }
+    const client = await createAuthenticatedMoodleClient();
+    initialState = {
+      kind: "ready",
+      data: await loadNotifications(
+        client,
+        session.userId,
+        session.site.siteUrl,
+      ),
+    };
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof MoodleFunctionError || error instanceof MoodleResponseError) {
+      useHtml = true;
+      initialState = { kind: "capability" };
+    } else if (error instanceof Error) {
       initialState = stateFromError(error);
     } else {
       throw error;
     }
   }
+  if (useHtml) return <StudentHtmlScreen description="フィードバックやお知らせを確認します。" session={session} surface="notifications" title="通知" />;
   return <NotificationsClient initialState={initialState} runtimeConfig={runtimeConfig} />;
 }

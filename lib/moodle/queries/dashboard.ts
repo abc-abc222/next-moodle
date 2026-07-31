@@ -18,6 +18,7 @@ import {
   MoodleUnreadNotificationCountSchema,
   type MoodleUserId,
 } from "@/lib/moodle/server";
+import { MoodlePageError } from "@/lib/moodle/page-contracts";
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
 import { projectDashboard, type DashboardProjection } from "./dashboard-model";
 
@@ -37,6 +38,12 @@ export type MoodleReadResult<T> =
   };
 
 export function toMoodleReadFailure(error: unknown): MoodleReadResult<never> {
+  if (error instanceof MoodlePageError) {
+    if (error.code === "reauth_required") return { kind: "failure", reason: "auth_expired" };
+    if (error.code === "forbidden") return { kind: "failure", reason: "permission" };
+    if (error.code === "transient_failure") return { kind: "failure", reason: "outage" };
+    return { kind: "failure", reason: "invalid_response" };
+  }
   if (error instanceof MoodleAuthError) {
     return { kind: "failure", reason: "auth_expired" };
   }

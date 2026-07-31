@@ -4,10 +4,8 @@ import { cache } from "react";
 
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
 import type { MoodleCapabilityManifest } from "@/lib/moodle/capabilities";
-import { ActivityAdapterPayloadSchema, type ActivityAdapterPayload } from "@/lib/moodle/activities/contracts";
-import { resolveActivityAdapter, resolveActivityDelivery, type ActivityAdapterResolution } from "@/lib/moodle/activities/registry";
+import { resolveActivity, resolveActivityDelivery, type ActivityResolution } from "@/lib/moodle/activities/registry";
 import type { CapabilityDelivery } from "@/lib/moodle/capabilities";
-import { MoodleResponseError } from "@/lib/moodle/errors";
 import {
   MOODLE_FUNCTIONS,
   MoodleCourseSectionsResponseSchema,
@@ -17,7 +15,8 @@ import {
   type MoodleUserId,
 } from "@/lib/moodle/server";
 import { moodleFileProxyPath } from "@/lib/security/moodle-file";
-import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
+import { moodleDocumentFromHtml, type MoodleDocument } from "@/lib/moodle/html";
+import { readHtmlActivityScreen, type HtmlActivityScreen } from "@/lib/moodle/activities/html-screen";
 import { safeMoodleUrl } from "./courses-model";
 import { toMoodleReadFailure, type MoodleReadResult } from "./dashboard";
 
@@ -29,14 +28,14 @@ export type ActivityFile = Readonly<{
 }>;
 
 export type ActivityWorkspaceDetail = Readonly<{
-  adapter: ActivityAdapterResolution;
+  resolution: ActivityResolution;
   delivery: CapabilityDelivery;
   availability: "available" | "hidden" | "restricted";
   completion: "complete" | "incomplete" | "none";
-  companion: ActivityAdapterPayload | null;
   course: Readonly<{ id: MoodleCourseId; name: string; shortName: string }>;
-  description: SanitizedMoodleHtml;
+  description: MoodleDocument;
   files: readonly ActivityFile[];
+  htmlScreen: HtmlActivityScreen | null;
   id: MoodleCourseModuleId;
   instance: number | null;
   moduleType: string;
@@ -74,26 +73,29 @@ export const readActivityWorkspace = cache(
           if (course.visible === 0 || courseModule.visible === 0 || courseModule.uservisible === false) {
             return { kind: "failure", reason: "permission" };
           }
-          const adapter = resolveActivityAdapter(courseModule.modname, request.manifest);
-          const companionResponse = adapter.kind === "adapter_required" && request.manifest.companionModules.includes(courseModule.modname)
-            ? await client.call(MOODLE_FUNCTIONS.activityAdapter, { cmid: courseModule.id }, ActivityAdapterPayloadSchema)
+          const resolution = resolveActivity(courseModule.modname, request.manifest);
+          const description = moodleDocumentFromHtml(courseModule.description ?? "", { siteUrl: request.siteUrl });
+          const htmlScreen = resolution.kind === "html"
+            ? await readHtmlActivityScreen({
+              cmid: courseModule.id,
+              instance: courseModule.instance ?? null,
+              moduleName: courseModule.modname,
+              siteUrl: request.siteUrl,
+              userId: request.userId,
+            })
             : null;
-          if (companionResponse !== null && (
-            companionResponse.data.cmid !== courseModule.id || companionResponse.data.moduleName !== courseModule.modname
-          )) throw new MoodleResponseError();
           return {
             kind: "ready",
             data: {
-              adapter,
+              resolution,
               delivery: resolveActivityDelivery(courseModule.modname, request.manifest),
               availability: "available",
               completion: courseModule.completion === undefined || courseModule.completion === 0
                 ? "none"
                 : (courseModule.completiondata?.state ?? 0) > 0 ? "complete" : "incomplete",
-              companion: companionResponse?.data ?? null,
               course: { id: course.id, name: course.fullname, shortName: course.shortname },
               dates: (courseModule.dates ?? []).map((date) => ({ label: date.label, timestamp: date.timestamp })),
-              description: sanitizeMoodleHtml(courseModule.description ?? "", { siteUrl: request.siteUrl }),
+              description,
               files: (courseModule.contents ?? []).map((file) => ({
                 downloadUrl: file.fileurl === undefined
                   ? null
@@ -102,6 +104,7 @@ export const readActivityWorkspace = cache(
                 filesize: file.filesize ?? 0,
                 mimetype: file.mimetype ?? "application/octet-stream",
               })),
+              htmlScreen,
               id: courseModule.id,
               instance: courseModule.instance ?? null,
               moduleType: courseModule.modname,

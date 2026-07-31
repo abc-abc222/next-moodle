@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
-import { sanitizeQuizQuestionHtml } from "@/lib/security/html";
+import { moodleQuizDocumentFromHtml } from "@/lib/moodle/html";
 import { MOODLE_FUNCTIONS } from "../functions";
 import type { MoodleCourseId, MoodleCourseModuleId } from "../identifiers";
 import { toMoodleReadFailure, type MoodleReadResult } from "../queries/dashboard";
@@ -54,7 +54,7 @@ export async function readLessonActivity(
         kind: "ready",
         data: {
           completed: false,
-          content: sanitizeQuizQuestionHtml("", { siteUrl: request.siteUrl }),
+          content: moodleQuizDocumentFromHtml("", { siteUrl: request.siteUrl }),
           id: lesson.id,
           name: lesson.name,
           pageId: null,
@@ -73,7 +73,7 @@ export async function readLessonActivity(
       kind: "ready",
       data: {
         completed,
-        content: sanitizeQuizQuestionHtml(content, { siteUrl: request.siteUrl }),
+        content: moodleQuizDocumentFromHtml(content, { siteUrl: request.siteUrl }),
         id: lesson.id,
         name: lesson.name,
         pageId: completed ? null : response.data.page?.id ?? response.data.newpageid,

@@ -2,7 +2,6 @@ import {
   authenticateWithMoodle,
   readMoodleConfig,
 } from "@/lib/moodle/server";
-import { readMoodleRequireCompanion } from "@/lib/moodle/config";
 import {
   createMoodleSession,
   saveMoodleSession,
@@ -23,7 +22,6 @@ export async function POST(request: Request): Promise<Response> {
     const login = await authenticateWithMoodle(
       readMoodleConfig(),
       credentials,
-      readMoodleRequireCompanion(),
     );
     await saveMoodleSession(createMoodleSession(login));
     return noStoreResponse({ ok: true });

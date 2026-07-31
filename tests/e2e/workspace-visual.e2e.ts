@@ -12,7 +12,7 @@ const ROUTES = [
   { heading: "コース", name: "course-index", path: "/courses" },
   { heading: "Introduction to Marine Biology", name: "course", path: "/courses/101" },
   { heading: "Tide pool field notes", name: "assignment", path: "/assignments/9101" },
-  { heading: "アンケート回答", name: "questionnaire", path: "/activities/9198" },
+  { heading: "Fieldwork preparation survey", name: "questionnaire", path: "/activities/9198" },
   { heading: "カレンダー", name: "calendar", path: "/calendar" },
   { heading: "通知", name: "notifications", path: "/notifications" },
   { heading: "成績", name: "grades", path: "/grades" },
