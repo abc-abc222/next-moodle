@@ -56,6 +56,8 @@ bun run dev
 
 接続診断は、補助契約だけでなく公開コースの活動種別を横断確認します。公式アダプターまたは補助アダプターに解決できない活動が1件でもあればReadyにせず、活動名や学生データを出さずにモジュール種別と件数だけを表示します。
 
+標準 Web Service にない活動（例: Questionnaire、出席、学内独自活動）は、本アプリで活動状態と教材を表示した上で、接続中 Moodle と同一オリジンの検証済み URL だけを別タブで開きます。トークン、パスワード、任意の外部 URL は引き渡しません。
+
 ローカルのMock Moodleは実在組織と無関係な2ユーザー分のfixtureを提供し、成績、教材、完了更新、課題提出、メッセージ、通知を実環境へ更新せず検証できます。
 
 ## 文章補助
@@ -75,3 +77,5 @@ bun run test:e2e
 bun run react:doctor
 bun audit
 ```
+
+実サイトとの read-only 契約テストは、通常はスキップされます。明示的に実行する場合だけ `MOODLE_LIVE_INTEGRATION=1`、`MOODLE_LIVE_BASE_URL`、`MOODLE_LIVE_USERNAME`、`MOODLE_LIVE_PASSWORD`（任意で `MOODLE_LIVE_SERVICE`）を CI のシークレットとして設定してください。取得した Moodle データは fixture やログへ保存しません。

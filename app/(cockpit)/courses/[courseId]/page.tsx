@@ -34,6 +34,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
   if (result.kind === "failure") {
     return (
       <StateNotice
+        {...(result.diagnostic === undefined ? {} : { diagnostic: result.diagnostic })}
         reason={resolveMoodlePageFailure(result.reason)}
         retryHref={`/courses/${parsedCourseId.data}`}
         siteUrl={session.site.siteUrl}

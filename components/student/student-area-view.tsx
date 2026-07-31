@@ -6,11 +6,13 @@ import { InspectorSheet } from "@/components/app-shell/inspector-sheet";
 import { ContextPanel } from "@/components/app-shell/context-panel";
 import { PageFrame, RouteHeader } from "@/components/app-shell/workspace-frame";
 import type { AppRuntimeConfig } from "@/lib/app-config";
+import type { ReactNode } from "react";
 import type { StudentAreaData } from "@/lib/moodle/queries/student";
 import { StudentAreaNavigation } from "./student-area-navigation";
 import "./student.css";
 
-export function StudentAreaView({ config, data, description, empty, title }: Readonly<{
+export function StudentAreaView({ actions, config, data, description, empty, title }: Readonly<{
+  actions?: ReactNode;
   config: AppRuntimeConfig;
   data: StudentAreaData;
   description: string;
@@ -40,7 +42,7 @@ export function StudentAreaView({ config, data, description, empty, title }: Rea
         </ul>
       )}
       context={<ContextPanel storageKey="student" title="学習情報"><StudentAreaNavigation /></ContextPanel>}
-      header={<RouteHeader actions={<InspectorSheet label={<><Info aria-hidden size={17} />概要</>} title="概要"><div className="ui-student-overview"><strong className="ui-tabular">{data.metric}</strong><p>ログイン中のMoodleアカウントから取得しています。</p></div></InspectorSheet>} description={description} eyebrow="STUDENT RECORD" metadata={data.metric} title={title} />}
+      header={<RouteHeader actions={<>{actions}<InspectorSheet label={<><Info aria-hidden size={17} />概要</>} title="概要"><div className="ui-student-overview"><strong className="ui-tabular">{data.metric}</strong><p>ログイン中のMoodleアカウントから取得しています。</p></div></InspectorSheet></>} description={description} eyebrow="STUDENT RECORD" metadata={data.metric} title={title} />}
       mode="browse"
     />
   );

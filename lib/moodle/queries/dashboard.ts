@@ -13,6 +13,7 @@ import {
   MoodleOutageError,
   MoodlePermissionError,
   MoodleResponseError,
+  type MoodleResponseDiagnostic,
   MoodleTimelineCoursesResponseSchema,
   MoodleUnreadNotificationCountSchema,
   type MoodleUserId,
@@ -29,7 +30,11 @@ export type MoodleReadFailureReason =
 
 export type MoodleReadResult<T> =
   | { readonly kind: "ready"; readonly data: T }
-  | { readonly kind: "failure"; readonly reason: MoodleReadFailureReason };
+  | {
+    readonly diagnostic?: MoodleResponseDiagnostic;
+    readonly kind: "failure";
+    readonly reason: MoodleReadFailureReason;
+  };
 
 export function toMoodleReadFailure(error: unknown): MoodleReadResult<never> {
   if (error instanceof MoodleAuthError) {
@@ -45,7 +50,13 @@ export function toMoodleReadFailure(error: unknown): MoodleReadResult<never> {
     return { kind: "failure", reason: "outage" };
   }
   if (error instanceof MoodleResponseError || error instanceof MoodleInputError) {
-    return { kind: "failure", reason: "invalid_response" };
+    return {
+      ...(error instanceof MoodleResponseError && error.diagnostic !== undefined
+        ? { diagnostic: error.diagnostic }
+        : {}),
+      kind: "failure",
+      reason: "invalid_response",
+    };
   }
   throw error;
 }

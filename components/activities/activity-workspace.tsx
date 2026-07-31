@@ -96,11 +96,11 @@ export function ActivityWorkspace({ canUpdateCompletion, config, data, native }:
 
   return (
     <PageFrame
-      actions={data.adapter.kind !== "native" && data.companion === null ? <ActionDock><span>この活動は安全な実行方式をまだ確認できていません</span><TransitionLink className="ui-app-action-link" href="/diagnostics" intent="switch">接続診断を確認</TransitionLink></ActionDock> : undefined}
+      actions={data.adapter.kind !== "native" && data.companion === null ? <ActionDock><span>この活動は安全な実行方式をまだ確認できていません</span>{data.sourceUrl === null ? <TransitionLink className="ui-app-action-link" href="/diagnostics" intent="switch">接続診断を確認</TransitionLink> : <a className="ui-app-action-link" href={data.sourceUrl} rel="noopener noreferrer" target="_blank">本家で続ける <ArrowSquareOut aria-hidden size={16} /></a>}</ActionDock> : undefined}
       content={(
         <div className="ui-activity-document" aria-label="アクティビティ作業面">
           {data.availability !== "available" ? <Notice title="現在このアクティビティは利用できません" tone="warning"><p>公開条件または受講条件を確認してください。</p></Notice> : null}
-          {data.adapter.kind === "adapter_required" && data.companion === null ? <Notice title="この活動にはアダプターが必要です" tone="warning"><p>回答や進捗を失わないよう、Moodle画面へのフォールバックは行いません。型付きの next-moodle 補助アダプターをMoodle管理者に依頼してください。</p></Notice> : null}
+          {data.adapter.kind === "adapter_required" && data.companion === null ? <Notice title="この活動は本家 Moodle で続けます" tone="info"><p>回答や進捗を失わないため、この活動は本家 Moodle の安全な画面で開きます。本アプリには活動の状態と教材を表示し続けます。</p></Notice> : null}
           {data.adapter.kind === "unavailable" ? <Notice title="Moodle APIが許可されていません" tone="warning"><p>この活動に必要な公式Web Service関数をMoodle管理者が許可すると、ここで操作できます。</p></Notice> : null}
           {data.companion === null ? null : <section className="ui-companion-blocks" aria-label="拡張アダプター">{data.companion.blocks.map((block) => {
             const key = companionBlockKey(block);

@@ -49,10 +49,18 @@ export type CourseActivity = {
     mimetype: string;
   }>[];
   readonly id: number;
+  readonly indent: number;
   readonly moduleType: string;
   readonly name: string;
   readonly typeLabel: string;
 };
+
+export type CourseSubsection = Readonly<{
+  id: number;
+  indent: number;
+  kind: "subsection";
+  title: string;
+}>;
 
 export type CourseInlineLabel = Readonly<{
   content: SanitizedMoodleHtml;
@@ -68,7 +76,7 @@ export type CourseModuleError = Readonly<{
   name: string;
 }>;
 
-export type CourseStreamItem = CourseActivity | CourseInlineLabel | CourseModuleError;
+export type CourseStreamItem = CourseActivity | CourseInlineLabel | CourseModuleError | CourseSubsection;
 
 export type CourseSection = {
   readonly id: number;
@@ -231,6 +239,15 @@ export const readCourseDetail = cache(
             });
             continue;
           }
+          if (courseModule.modname === "subsection") {
+            items.push({
+              id: courseModule.id,
+              indent: courseModule.indent ?? 0,
+              kind: "subsection",
+              title: courseModule.name,
+            });
+            continue;
+          }
           if (courseModule.integrity === "malformed") {
             items.push({
               id: courseModule.id,
@@ -259,7 +276,7 @@ export const readCourseDetail = cache(
             description: sanitizeMoodleHtml(courseModule.description ?? "", { siteUrl: request.siteUrl }),
             destination: hasCompanionAdapter
               ? { kind: "internal", href: `/activities/${courseModule.id}` }
-              : activityDestination(courseModule),
+              : activityDestination(courseModule, request.siteUrl),
             ...(dueAt === undefined ? {} : { dueAt }),
             files: (courseModule.contents ?? []).map((file) => ({
               downloadUrl: file.fileurl === undefined ? null : moodleFileProxyPath(file.fileurl, request.siteUrl),
@@ -268,6 +285,7 @@ export const readCourseDetail = cache(
               mimetype: file.mimetype ?? "application/octet-stream",
             })),
             id: courseModule.id,
+            indent: courseModule.indent ?? 0,
             kind: "activity",
             moduleType: courseModule.modname,
             name: courseModule.name,

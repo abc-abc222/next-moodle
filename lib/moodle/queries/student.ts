@@ -115,6 +115,7 @@ export const readProfile = cache(async (
       { id: "name", meta: "表示名", title: profile.fullname },
       ...(profile.email === undefined ? [] : [{ id: "email", meta: "メール", title: profile.email }]),
       ...(profile.city === undefined ? [] : [{ id: "city", meta: "地域", title: [profile.city, profile.country].filter(Boolean).join(", ") }]),
+      ...(profile.timezone === undefined ? [] : [{ id: "timezone", meta: "タイムゾーン", title: profile.timezone }]),
     ];
     return { kind: "ready", data: { metric: `User ${userId}`, rows } };
   } catch (error) {

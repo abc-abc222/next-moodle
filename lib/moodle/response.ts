@@ -8,6 +8,7 @@ import {
   MoodleOutageError,
   MoodlePermissionError,
   MoodleResponseError,
+  responseDiagnosticFromIssues,
 } from "./errors";
 
 const MoodleExceptionEnvelopeSchema = z.object({
@@ -54,7 +55,10 @@ const INPUT_CODES: ReadonlySet<string> = new Set([
   "missingparam",
 ]);
 
-export function errorFromMoodleEnvelope(value: unknown): MoodleError | null {
+export function errorFromMoodleEnvelope(
+  value: unknown,
+  functionName?: string,
+): MoodleError | null {
   const parsed = MoodleExceptionEnvelopeSchema.safeParse(value);
   if (!parsed.success) {
     return null;
@@ -72,17 +76,28 @@ export function errorFromMoodleEnvelope(value: unknown): MoodleError | null {
   if (INPUT_CODES.has(code)) {
     return new MoodleInputError();
   }
-  return new MoodleResponseError();
+  return new MoodleResponseError(responseDiagnosticFromIssues({
+    ...(functionName === undefined ? {} : { functionName }),
+    issues: [],
+    phase: "exception",
+  }));
 }
 
-export function warningsFromMoodleResponse(value: unknown): readonly MoodleWarning[] {
+export function warningsFromMoodleResponse(
+  value: unknown,
+  functionName?: string,
+): readonly MoodleWarning[] {
   const object = z.object({ warnings: z.unknown().optional() }).safeParse(value);
   if (!object.success || object.data.warnings === undefined) {
     return [];
   }
   const parsed = MoodleWarningsEnvelopeSchema.safeParse(value);
   if (!parsed.success) {
-    throw new MoodleResponseError();
+    throw new MoodleResponseError(responseDiagnosticFromIssues({
+      ...(functionName === undefined ? {} : { functionName }),
+      issues: parsed.error.issues,
+      phase: "warning_schema",
+    }));
   }
   return parsed.data.warnings.map((warning) => {
     if (warning.item !== undefined && warning.itemid !== undefined) {

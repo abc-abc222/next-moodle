@@ -11,6 +11,54 @@ export const MOODLE_ERROR_CODES = {
 export type MoodleErrorCode =
   (typeof MOODLE_ERROR_CODES)[keyof typeof MOODLE_ERROR_CODES];
 
+export const MOODLE_DIAGNOSTIC_PHASES = [
+  "exception",
+  "json",
+  "response_schema",
+  "warning_schema",
+] as const;
+export type MoodleDiagnosticPhase = (typeof MOODLE_DIAGNOSTIC_PHASES)[number];
+
+export type MoodleResponseDiagnostic = Readonly<{
+  functionName?: string;
+  issues: readonly Readonly<{
+    code: string;
+    expected?: string;
+    path: string;
+    received?: string;
+  }>[];
+  occurredAt: number;
+  phase: MoodleDiagnosticPhase;
+}>;
+
+type ZodIssueShape = Readonly<{
+  code: string;
+  expected?: unknown;
+  path: readonly PropertyKey[];
+  received?: unknown;
+}>;
+
+/** Keeps only schema structure; no Moodle values, tokens, or error messages. */
+export function responseDiagnosticFromIssues(
+  input: Readonly<{
+    functionName?: string;
+    issues: readonly ZodIssueShape[];
+    phase: MoodleDiagnosticPhase;
+  }>,
+): MoodleResponseDiagnostic {
+  return {
+    ...(input.functionName === undefined ? {} : { functionName: input.functionName }),
+    issues: input.issues.slice(0, 10).map((issue) => ({
+      code: issue.code,
+      ...(typeof issue.expected === "string" ? { expected: issue.expected } : {}),
+      path: issue.path.map((part) => typeof part === "number" ? `[${part}]` : String(part)).join(".") || "response",
+      ...(typeof issue.received === "string" ? { received: issue.received } : {}),
+    })),
+    occurredAt: Date.now(),
+    phase: input.phase,
+  };
+}
+
 export abstract class MoodleError extends Error {
   abstract override readonly name: string;
 
@@ -78,7 +126,7 @@ export class MoodleOutageError extends MoodleError {
 export class MoodleResponseError extends MoodleError {
   override readonly name = "MoodleResponseError";
 
-  constructor() {
+  constructor(readonly diagnostic?: MoodleResponseDiagnostic) {
     super(
       MOODLE_ERROR_CODES.invalidResponse,
       "Moodle returned an invalid response.",

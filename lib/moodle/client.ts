@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import type { MoodleConfig } from "./config";
 import { restEndpoint } from "./config";
-import { MoodleFunctionError, MoodleResponseError } from "./errors";
+import {
+  MoodleFunctionError,
+  MoodleResponseError,
+  responseDiagnosticFromIssues,
+} from "./errors";
 import {
   isReadFunction,
   MoodleFunctionNameSchema,
@@ -65,17 +69,21 @@ export class MoodleClient {
       retryTransient: isReadFunction(parsedFunction.data),
     });
     const raw = await readMoodleJson(response);
-    const moodleError = errorFromMoodleEnvelope(raw);
+    const moodleError = errorFromMoodleEnvelope(raw, parsedFunction.data);
     if (moodleError !== null) {
       throw moodleError;
     }
     const parsed = schema.safeParse(raw);
     if (!parsed.success) {
-      throw new MoodleResponseError();
+      throw new MoodleResponseError(responseDiagnosticFromIssues({
+        functionName: parsedFunction.data,
+        issues: parsed.error.issues,
+        phase: "response_schema",
+      }));
     }
     return {
       data: parsed.data,
-      warnings: warningsFromMoodleResponse(raw),
+      warnings: warningsFromMoodleResponse(raw, parsedFunction.data),
     };
   }
 }

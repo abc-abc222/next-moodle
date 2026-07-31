@@ -91,6 +91,16 @@ test("Moodle 4.5 course files accept a null filepath without rejecting the cours
   expect(parsed.success).toBe(true);
 });
 
+test("Moodle preserves subsection indentation for the course hierarchy", () => {
+  const parsed = MoodleCourseSectionsResponseSchema.parse([{
+    id: 11,
+    name: "Week one",
+    modules: [{ id: 102, name: "Further reading", modname: "subsection", indent: 2 }],
+  }]);
+
+  expect(parsed[0]?.modules[0]).toMatchObject({ modname: "subsection", indent: 2 });
+});
+
 test("Moodle normalizes nullable profile fields instead of rejecting the profile page", () => {
   const parsed = UserProfilesSchema.parse([{
     id: 41,
@@ -99,6 +109,7 @@ test("Moodle normalizes nullable profile fields instead of rejecting the profile
     city: "",
     country: null,
     description: null,
+    timezone: null,
   }]);
 
   expect(parsed).toEqual([{
@@ -108,6 +119,7 @@ test("Moodle normalizes nullable profile fields instead of rejecting the profile
     city: undefined,
     country: undefined,
     description: undefined,
+    timezone: undefined,
   }]);
 });
 

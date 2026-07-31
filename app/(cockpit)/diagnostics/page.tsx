@@ -4,13 +4,25 @@ import { StudentAreaView } from "@/components/student/student-area-view";
 import { readAppRuntimeConfig } from "@/lib/app-config";
 import { requireMoodleSession } from "@/lib/auth/server";
 import { missingRequiredStudentFunctions } from "@/lib/moodle/capabilities";
+import { MOODLE_DIAGNOSTIC_PHASES } from "@/lib/moodle/errors";
+import { MoodleFunctionNameSchema } from "@/lib/moodle/functions";
 import { readCourseAdapterDiagnostics } from "@/lib/moodle/queries/courses";
 import { studentSupportCatalog } from "@/lib/moodle/support-catalog";
 
 export const metadata: Metadata = { title: "接続診断" };
 
-export default async function DiagnosticsPage() {
+type DiagnosticsPageProps = Readonly<{
+  searchParams: Promise<{ at?: string; function?: string; phase?: string }>;
+}>;
+
+export default async function DiagnosticsPage({ searchParams }: DiagnosticsPageProps) {
   const session = await requireMoodleSession();
+  const query = await searchParams;
+  const functionName = MoodleFunctionNameSchema.safeParse(query.function);
+  const phase = MOODLE_DIAGNOSTIC_PHASES.includes(query.phase as typeof MOODLE_DIAGNOSTIC_PHASES[number])
+    ? query.phase
+    : undefined;
+  const occurredAt = Number(query.at);
   const missing = missingRequiredStudentFunctions(session.manifest);
   const adapterDiagnostics = await readCourseAdapterDiagnostics(session.userId, session.manifest);
   const unresolved = adapterDiagnostics.kind === "ready" ? adapterDiagnostics.data : [];
@@ -22,6 +34,11 @@ export default async function DiagnosticsPage() {
   const replacementReady = session.manifest.replacementReady && missing.length === 0 &&
     adapterDiagnostics.kind === "ready" && unresolved.length === 0;
   const rows = [
+    ...(functionName.success && phase !== undefined ? [{
+      id: "last-response",
+      meta: `直近の応答診断${Number.isSafeInteger(occurredAt) ? ` · ${new Date(occurredAt).toLocaleString("ja-JP")}` : ""}`,
+      title: `${functionName.data} / ${phase}`,
+    }] : []),
     { id: "release", meta: "Moodleバージョン", title: session.manifest.moodleRelease },
     { id: "contract", meta: "local_nextmoodle", title: session.manifest.companion.contractVersion === 2 ? "契約v2 接続済み" : "契約v2が必要" },
     { id: "catalog", meta: `対応カタログ v${session.manifest.version}`, title: `native ${deliveryCounts.native} / adapter ${deliveryCounts.adapter} / runtime ${deliveryCounts.runtime} / 未対応 ${deliveryCounts.unavailable}` },

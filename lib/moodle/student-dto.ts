@@ -42,6 +42,7 @@ export const UserProfilesSchema = z.array(z.object({
   city: OptionalProfileTextSchema,
   country: OptionalProfileTextSchema,
   description: OptionalProfileTextSchema,
+  timezone: OptionalProfileTextSchema,
 }));
 
 export const PrivateFilesInfoSchema = z.object({

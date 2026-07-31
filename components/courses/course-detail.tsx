@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  ArrowSquareOut,
   CheckCircle,
   Circle,
   FileText,
@@ -19,6 +20,7 @@ import type { AppRuntimeConfig } from "@/lib/app-config";
 import { dateTimeFormatter } from "@/lib/date-time";
 import type {
   CourseActivity,
+  CourseSubsection,
   CourseDetail as CourseDetailData,
 } from "@/lib/moodle/queries/courses";
 import type { ActivityDestination } from "@/lib/moodle/queries/courses-model";
@@ -37,6 +39,8 @@ function ActivityAction({ activity }: Readonly<{ activity: CourseActivity }>): R
   switch (destination.kind) {
     case "internal":
       return <TransitionLink className="ui-course-activity__action" href={destination.href} intent="drill-in">開く <ArrowRight aria-hidden size={15} /></TransitionLink>;
+    case "moodle":
+      return <a className="ui-course-activity__action" href={destination.href} rel="noopener noreferrer" target="_blank">本家で続ける <ArrowSquareOut aria-hidden size={15} /></a>;
     case "disabled":
       return <span className="ui-course-activity__locked"><LockSimple aria-hidden size={15} />{destination.reason === "adapter_required" ? "アダプター待ち" : "利用不可"}</span>;
     default:
@@ -48,6 +52,10 @@ function CompletionIcon({ state }: Readonly<{ state: CourseActivity["completion"
   return state === "complete"
     ? <CheckCircle aria-label="完了" className="ui-course-activity__complete" size={18} weight="fill" />
     : <Circle aria-label={state === "none" ? "完了条件なし" : "未完了"} size={18} />;
+}
+
+function SubsectionMarker({ item }: Readonly<{ item: CourseSubsection }>) {
+  return <div className="ui-course-subsection" data-indent={Math.min(item.indent, 4)}><span>サブセクション</span><strong>{item.title}</strong></div>;
 }
 
 export function CourseDetail({ config, data }: Readonly<{
@@ -106,13 +114,15 @@ export function CourseDetail({ config, data }: Readonly<{
                           <span>{item.title}</span>
                           {item.content === "" ? null : <div className="ui-rich-content" dangerouslySetInnerHTML={{ __html: item.content }} />}
                         </article>
+                      ) : item.kind === "subsection" ? (
+                        <SubsectionMarker item={item} key={item.id} />
                       ) : item.kind === "error" ? (
                         <div className="ui-course-module-error" key={item.id}>
                           <WarningCircle aria-hidden size={18} />
                           <span><strong>{item.name}</strong><small>{item.moduleType} · 応答を読み取れません</small></span>
                         </div>
                       ) : (
-                        <article className="ui-course-activity" key={item.id}>
+                        <article className="ui-course-activity" data-indent={Math.min(item.indent, 4)} key={item.id}>
                           <div className="ui-course-activity__row">
                             <CompletionIcon state={item.completion} />
                             <span className="ui-course-activity__icon"><FileText aria-hidden size={19} /></span>

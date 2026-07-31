@@ -43,7 +43,7 @@ export default async function ActivityPage({ params, searchParams }: ActivityPag
   }
   const { result, session } = await readActivityPageData(cmid.data);
   if (result.kind === "failure") {
-    return <StateNotice reason={resolveMoodlePageFailure(result.reason)} retryHref={`/activities/${cmid.data}`} siteUrl={session.site.siteUrl} />;
+    return <StateNotice {...(result.diagnostic === undefined ? {} : { diagnostic: result.diagnostic })} reason={resolveMoodlePageFailure(result.reason)} retryHref={`/activities/${cmid.data}`} siteUrl={session.site.siteUrl} />;
   }
   if (result.data === null) {
     notFound();

@@ -37,10 +37,10 @@ describe("activityDestination", () => {
       id: 9101,
       name: "フィールドノート",
       modname: "assign",
-      url: "https://moodle.example/mod/assign/view.php?id=9101",
+      url: "https://moodle.example.edu/moodle/mod/assign/view.php?id=9101",
     });
 
-    const result = activityDestination(courseModule);
+    const result = activityDestination(courseModule, "https://moodle.example.edu/moodle");
 
     expect(result).toEqual({ kind: "internal", href: "/assignments/9101" });
   });
@@ -50,10 +50,10 @@ describe("activityDestination", () => {
       id: 9201,
       name: "講義資料",
       modname: "resource",
-      url: "https://moodle.example/mod/resource/view.php?id=9201",
+      url: "https://moodle.example.edu/moodle/mod/resource/view.php?id=9201",
     });
 
-    const result = activityDestination(courseModule);
+    const result = activityDestination(courseModule, "https://moodle.example.edu/moodle");
 
     expect(result).toEqual({ kind: "internal", href: "/activities/9201" });
   });
@@ -65,7 +65,7 @@ describe("activityDestination", () => {
       modname: "quiz",
     });
 
-    const result = activityDestination(courseModule);
+    const result = activityDestination(courseModule, "https://moodle.example.edu/moodle");
 
     expect(result).toEqual({ kind: "internal", href: "/activities/9301" });
   });
@@ -75,23 +75,23 @@ describe("activityDestination", () => {
       id: 9302,
       name: "出席確認アンケート",
       modname: "questionnaire",
-      url: "https://moodle.example/mod/questionnaire/view.php?id=9302",
+      url: "https://moodle.example.edu/moodle/mod/questionnaire/view.php?id=9302",
     });
 
-    expect(activityDestination(courseModule)).toEqual({ kind: "internal", href: "/activities/9302" });
+    expect(activityDestination(courseModule, "https://moodle.example.edu/moodle")).toEqual({ kind: "moodle", href: "https://moodle.example.edu/moodle/mod/questionnaire/view.php?id=9302" });
   });
 
-  test("Given an unknown module with a Moodle URL, When routed, Then it never escapes to Moodle UI", () => {
+  test("Given an unknown module with a trusted Moodle URL, When routed, Then it uses the safe Moodle handoff", () => {
     const courseModule = MoodleCourseModuleSchema.parse({
       id: 9401,
       name: "独自アクティビティ",
       modname: "localcustom",
-      url: "https://moodle.example/mod/localcustom/view.php?id=9401",
+      url: "https://moodle.example.edu/moodle/mod/localcustom/view.php?id=9401",
     });
 
-    const result = activityDestination(courseModule);
+    const result = activityDestination(courseModule, "https://moodle.example.edu/moodle");
 
-    expect(result).toEqual({ kind: "disabled", reason: "adapter_required" });
+    expect(result).toEqual({ kind: "moodle", href: "https://moodle.example.edu/moodle/mod/localcustom/view.php?id=9401" });
   });
 
   test("Given a label module, When projected, Then it is inline content rather than an activity", () => {

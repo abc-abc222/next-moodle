@@ -35,6 +35,7 @@ export type MoodleDashboardCourse = Readonly<
 const MoodleCourseModuleModelSchema = z.object({
   id: MoodleCourseModuleIdSchema,
   instance: z.number().int().nonnegative().optional(),
+  indent: z.number().int().nonnegative().optional(),
   name: MoodleTextSchema,
   modname: z.string().min(1).max(128),
   integrity: z.enum(["ready", "malformed"]),

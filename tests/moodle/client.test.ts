@@ -207,18 +207,26 @@ describe("MoodleClient wire behavior", () => {
 
     try {
       // When
-      const outcome = makeClient(moodle.baseUrl).call(
-        MOODLE_FUNCTIONS.siteInfo,
-        {},
-        ValueSchema,
-      );
+      let error: unknown;
+      try {
+        await makeClient(moodle.baseUrl).call(MOODLE_FUNCTIONS.siteInfo, {}, ValueSchema);
+      } catch (caught) {
+        error = caught;
+      }
 
       // Then
-      await expect(outcome).rejects.toBeInstanceOf(MoodleResponseError);
-      await expect(outcome).rejects.toMatchObject({
-        code: "invalid_response",
-        message: "Moodle returned an invalid response.",
+      expect(error).toBeInstanceOf(MoodleResponseError);
+      if (!(error instanceof MoodleResponseError)) {
+        throw new Error("Expected MoodleResponseError");
+      }
+      expect(error.code).toBe("invalid_response");
+      expect(error.message).toBe("Moodle returned an invalid response.");
+      expect(error.diagnostic).toMatchObject({
+        functionName: MOODLE_FUNCTIONS.siteInfo,
+        issues: [{ code: "invalid_type", expected: "string", path: "value" }],
+        phase: "response_schema",
       });
+      expect(error.diagnostic?.occurredAt).toBeNumber();
     } finally {
       moodle.close();
     }

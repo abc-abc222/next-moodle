@@ -72,6 +72,13 @@
 .ui-course-label > span { display: block; margin-block-end: var(--space-1); color: var(--accent-400); font-size: var(--font-size-caption); font-weight: 650; }
 .ui-course-label .ui-rich-content > :first-child { margin-block-start: 0; }
 .ui-course-label .ui-rich-content > :last-child { margin-block-end: 0; }
+.ui-course-subsection { display: grid; gap: 2px; min-block-size: 3.5rem; padding: var(--space-3); border-inline-start: 3px solid var(--accent-500); background: var(--surface-inset); }
+.ui-course-subsection span { color: var(--accent-400); font-size: var(--font-size-caption); font-weight: 650; }
+.ui-course-subsection strong { overflow-wrap: anywhere; font-size: var(--font-size-body-sm); }
+.ui-course-subsection[data-indent="1"], .ui-course-activity[data-indent="1"] { margin-inline-start: var(--space-4); }
+.ui-course-subsection[data-indent="2"], .ui-course-activity[data-indent="2"] { margin-inline-start: var(--space-8); }
+.ui-course-subsection[data-indent="3"], .ui-course-activity[data-indent="3"] { margin-inline-start: var(--space-12); }
+.ui-course-subsection[data-indent="4"], .ui-course-activity[data-indent="4"] { margin-inline-start: calc(var(--space-12) + var(--space-4)); }
 .ui-course-module-error { display: grid; grid-template-columns: auto minmax(0, 1fr); min-block-size: 3.75rem; align-items: center; gap: var(--space-3); padding: var(--space-3); color: var(--status-warning); }
 .ui-course-module-error span { display: grid; color: var(--text-primary); }
 .ui-course-module-error small { color: var(--text-tertiary); }

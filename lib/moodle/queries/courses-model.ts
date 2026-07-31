@@ -26,6 +26,7 @@ export type CourseModuleWithUrl = MoodleCourseModule & {
 
 export type ActivityDestination =
   | { readonly kind: "internal"; readonly href: string }
+  | { readonly kind: "moodle"; readonly href: string }
   | {
       readonly kind: "disabled";
       readonly reason: "adapter_required" | "hidden" | "url_unavailable";
@@ -117,18 +118,24 @@ export function safeMoodleUrl(url: string, siteUrl: string): string | null {
   }
 }
 
-export function activityDestination(courseModule: CourseModuleWithUrl): ActivityDestination {
+export function activityDestination(
+  courseModule: CourseModuleWithUrl,
+  siteUrl: string,
+): ActivityDestination {
   if (courseModule.visible === 0 || courseModule.uservisible === false) {
     return { kind: "disabled", reason: "hidden" };
   }
   if (courseModule.modname === "assign") {
     return { kind: "internal", href: `/assignments/${courseModule.id}` };
   }
-  // Questionnaire is a contributed Moodle plugin. Its question payload is not
-  // available through Moodle's standard Web Service, but its activity page can
-  // provide a safe Moodle fallback when no companion adapter is installed.
-  if (INTERNAL_ACTIVITY_MODULES.has(courseModule.modname) || courseModule.modname === "questionnaire") {
+  if (INTERNAL_ACTIVITY_MODULES.has(courseModule.modname)) {
     return { kind: "internal", href: `/activities/${courseModule.id}` };
+  }
+  const sourceUrl = courseModule.url === undefined
+    ? null
+    : safeMoodleUrl(courseModule.url, siteUrl);
+  if (sourceUrl !== null) {
+    return { kind: "moodle", href: sourceUrl };
   }
   return { kind: "disabled", reason: "adapter_required" };
 }
