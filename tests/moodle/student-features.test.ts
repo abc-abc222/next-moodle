@@ -6,7 +6,7 @@ import { MOODLE_FUNCTIONS } from "@/lib/moodle/functions";
 import { MoodleCourseSectionsResponseSchema } from "@/lib/moodle/dto";
 import { MoodleTokenSchema } from "@/lib/moodle/identifiers";
 import { plainTextFromMoodleMessage } from "@/lib/security/html";
-import { ConversationSchema, ConversationsSchema } from "@/lib/moodle/student-dto";
+import { ConversationSchema, ConversationsSchema, UserProfilesSchema } from "@/lib/moodle/student-dto";
 import { FIXTURE_USERS } from "@/mock/fixtures";
 import { createMoodleMock } from "@/mock/moodle-server";
 
@@ -89,6 +89,39 @@ test("Moodle 4.5 course files accept a null filepath without rejecting the cours
 
   // Then
   expect(parsed.success).toBe(true);
+});
+
+test("Moodle normalizes nullable profile fields instead of rejecting the profile page", () => {
+  const parsed = UserProfilesSchema.parse([{
+    id: 41,
+    fullname: null,
+    email: null,
+    city: "",
+    country: null,
+    description: null,
+  }]);
+
+  expect(parsed).toEqual([{
+    id: 41,
+    fullname: "Moodleユーザー",
+    email: undefined,
+    city: undefined,
+    country: undefined,
+    description: undefined,
+  }]);
+});
+
+test("Moodle normalizes nullable empty course sections", () => {
+  const parsed = MoodleCourseSectionsResponseSchema.parse([{
+    id: 11,
+    name: "Week one",
+    visible: "1",
+    summary: null,
+    modules: null,
+  }]);
+
+  expect(parsed[0]).toMatchObject({ id: 11, visible: 1, modules: [] });
+  expect(parsed[0]?.summary).toBeUndefined();
 });
 
 test("Moodle 4.5 conversations normalize a null unread count to zero", () => {

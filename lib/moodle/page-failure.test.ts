@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { resolveMoodlePageFailure } from "@/components/app-shell/state-notice";
+
 import { dispositionForMoodlePageFailure } from "./page-failure";
 
 describe("Moodle page failure disposition", () => {
@@ -12,8 +14,10 @@ describe("Moodle page failure disposition", () => {
     expect(dispositionForMoodlePageFailure("capability")).toBe("capability");
   });
 
-  test("sends outages and invalid responses to the error boundary", () => {
-    expect(dispositionForMoodlePageFailure("outage")).toBe("error");
-    expect(dispositionForMoodlePageFailure("invalid_response")).toBe("error");
+  test("keeps outages and invalid responses recoverable", () => {
+    expect(dispositionForMoodlePageFailure("outage")).toBe("recoverable");
+    expect(dispositionForMoodlePageFailure("invalid_response")).toBe("recoverable");
+    expect(resolveMoodlePageFailure("outage")).toBe("outage");
+    expect(resolveMoodlePageFailure("invalid_response")).toBe("invalid_response");
   });
 });

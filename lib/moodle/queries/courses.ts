@@ -10,8 +10,8 @@ import {
   type MoodleDashboardCourse,
   type MoodleUserId,
 } from "@/lib/moodle/server";
-import type { MoodleCapabilityManifest } from "@/lib/moodle/capabilities";
-import { resolveActivityAdapter } from "@/lib/moodle/activities/registry";
+import type { CapabilityDelivery, MoodleCapabilityManifest } from "@/lib/moodle/capabilities";
+import { resolveActivityAdapter, resolveActivityDelivery } from "@/lib/moodle/activities/registry";
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
 import { sanitizeMoodleHtml, type SanitizedMoodleHtml } from "@/lib/security/html";
 import { moodleFileProxyPath } from "@/lib/security/moodle-file";
@@ -35,7 +35,8 @@ export type CommandCourse = {
 
 export type CourseActivity = {
   readonly kind: "activity";
-  readonly adapterState: "native" | "companion" | "moodle_fallback" | "adapter_required" | "unavailable";
+  readonly adapterState: "native" | "companion" | "adapter_required" | "unavailable";
+  readonly delivery: CapabilityDelivery;
   readonly availability: "available" | "hidden" | "restricted";
   readonly completion: "complete" | "incomplete" | "none";
   readonly description: SanitizedMoodleHtml;
@@ -242,13 +243,13 @@ export const readCourseDetail = cache(
           const resolution = resolveActivityAdapter(courseModule.modname, request.manifest);
           const hasCompanionAdapter = resolution.kind === "adapter_required" &&
             request.manifest.companionModules.includes(courseModule.modname);
-          const hasMoodleFallback = courseModule.modname === "questionnaire" && !hasCompanionAdapter;
           const dueAt = courseModule.dates?.find((date) =>
             date.dataid?.toLowerCase().includes("due") === true ||
             date.label.toLowerCase().includes("due") || date.label.includes("期限"),
           )?.timestamp;
           items.push({
-            adapterState: hasCompanionAdapter ? "companion" : hasMoodleFallback ? "moodle_fallback" : resolution.kind,
+            adapterState: hasCompanionAdapter ? "companion" : resolution.kind,
+            delivery: resolveActivityDelivery(courseModule.modname, request.manifest),
             availability: courseModule.visible === 0
               ? "hidden"
               : courseModule.uservisible === false ? "restricted" : "available",

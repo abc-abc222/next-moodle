@@ -75,8 +75,8 @@ export function ActivityWorkspace({ canUpdateCompletion, config, data, native }:
   native: NativeActivityData | undefined;
 }>) {
   const dateFormat = dateTimeFormatter(config.locale, { dateStyle: "medium", timeStyle: "short", timeZone: config.timeZone });
-  const questionnaireFallback = data.moduleType === "questionnaire" && (data.companion === null || data.companion.activity === null) && data.sourceUrl !== null;
   const typeLabel = data.adapter.kind === "native" ? data.adapter.adapter.label : data.moduleType === "questionnaire" ? "アンケート" : data.moduleType;
+  const deliveryLabel = data.delivery === "native" ? "公式API" : data.delivery === "adapter" ? "補助アダプター" : data.delivery === "runtime" ? "隔離ランタイム" : "未対応";
   const activityDetails = (
     <div className="ui-activity-details">
       <div className="ui-activity-state">
@@ -88,7 +88,7 @@ export function ActivityWorkspace({ canUpdateCompletion, config, data, native }:
         <div><dt>セクション</dt><dd>{data.section.name}</dd></div>
         {data.dates.map((date) => <div key={`${date.label}-${date.timestamp}`}><dt>{localizedDateLabel(date.label)}</dt><dd>{dateFormat.format(new Date(date.timestamp * 1_000))}</dd></div>)}
       </dl>
-      <div className="ui-activity-adapter-state"><PuzzlePiece aria-hidden size={18} /><span>{data.adapter.kind === "native" ? "公式API" : data.companion?.state === "available" ? "補助アダプター" : data.adapter.kind === "adapter_required" ? "アダプター待ち" : "API未許可"}</span></div>
+      <div className="ui-activity-adapter-state"><PuzzlePiece aria-hidden size={18} /><span>{deliveryLabel}</span></div>
       {canUpdateCompletion && data.completion !== "none" ? <CompletionToggle cmid={data.id} complete={data.completion === "complete"} /> : null}
       <TransitionLink className="ui-app-action-link" href={`/courses/${data.course.id}`} intent="return"><ArrowLeft aria-hidden size={15} />コース内容へ戻る</TransitionLink>
     </div>
@@ -96,12 +96,11 @@ export function ActivityWorkspace({ canUpdateCompletion, config, data, native }:
 
   return (
     <PageFrame
-      actions={data.sourceUrl !== null && data.adapter.kind !== "native" && data.companion === null && !questionnaireFallback ? <ActionDock><span>この活動はNext.js内で解決されていません</span><TransitionLink className="ui-app-action-link" href="/diagnostics" intent="switch">接続診断を確認</TransitionLink></ActionDock> : undefined}
+      actions={data.adapter.kind !== "native" && data.companion === null ? <ActionDock><span>この活動は安全な実行方式をまだ確認できていません</span><TransitionLink className="ui-app-action-link" href="/diagnostics" intent="switch">接続診断を確認</TransitionLink></ActionDock> : undefined}
       content={(
         <div className="ui-activity-document" aria-label="アクティビティ作業面">
           {data.availability !== "available" ? <Notice title="現在このアクティビティは利用できません" tone="warning"><p>公開条件または受講条件を確認してください。</p></Notice> : null}
-          {questionnaireFallback ? <Notice action={<a className="ui-app-action-link" href={data.sourceUrl} rel="noopener noreferrer" target="_blank">Moodleでアンケートを開く<ArrowSquareOut aria-hidden size={16} /></a>} title="この設問形式はMoodleで回答できます" tone="info"><p>このアンケートには、next-moodleの型付きフォームではまだ扱えない設問形式が含まれています。回答内容を保護するため、Moodleで安全に入力・送信できます。</p></Notice> : null}
-          {data.adapter.kind === "adapter_required" && data.companion === null && !questionnaireFallback ? <Notice title="この活動にはアダプターが必要です" tone="warning"><p>型付きの next-moodle 補助アダプターをMoodle管理者に依頼してください。</p></Notice> : null}
+          {data.adapter.kind === "adapter_required" && data.companion === null ? <Notice title="この活動にはアダプターが必要です" tone="warning"><p>回答や進捗を失わないよう、Moodle画面へのフォールバックは行いません。型付きの next-moodle 補助アダプターをMoodle管理者に依頼してください。</p></Notice> : null}
           {data.adapter.kind === "unavailable" ? <Notice title="Moodle APIが許可されていません" tone="warning"><p>この活動に必要な公式Web Service関数をMoodle管理者が許可すると、ここで操作できます。</p></Notice> : null}
           {data.companion === null ? null : <section className="ui-companion-blocks" aria-label="拡張アダプター">{data.companion.blocks.map((block) => {
             const key = companionBlockKey(block);

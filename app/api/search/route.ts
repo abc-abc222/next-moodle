@@ -4,6 +4,7 @@ import { createAuthenticatedMoodleClient, requireMoodleSession } from "@/lib/aut
 import { MoodleCourseSectionsResponseSchema, MoodleEnrolledCoursesResponseSchema } from "@/lib/moodle/dto";
 import { MOODLE_FUNCTIONS } from "@/lib/moodle/functions";
 import { ConversationsSchema } from "@/lib/moodle/student-dto";
+import { readPrivateFiles } from "@/lib/moodle/queries/student";
 import { safeMoodleDestination } from "@/lib/moodle/urls";
 
 export const runtime = "nodejs";
@@ -57,7 +58,18 @@ export async function GET(request: Request): Promise<Response> {
         label: conversation.name,
       }] : []
     );
-    return Response.json({ results: [...activities, ...conversations].slice(0, 20) }, { headers: { "Cache-Control": "private, no-store" } });
+    const privateFiles = session.manifest.features.privateFiles === "available"
+      ? await readPrivateFiles(session.userId, session.site.siteUrl)
+      : null;
+    const files = privateFiles?.kind === "ready"
+      ? privateFiles.data.rows.flatMap((file) => normalized(`${file.title} ${file.meta}`).includes(needle) ? [{
+        href: "/files",
+        keywords: [file.meta, "プライベートファイル"],
+        kind: "file" as const,
+        label: file.title,
+      }] : [])
+      : [];
+    return Response.json({ results: [...activities, ...conversations, ...files].slice(0, 20) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof Error) return Response.json({ results: [] }, { status: 502, headers: { "Cache-Control": "private, no-store" } });
     throw error;

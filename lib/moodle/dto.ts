@@ -15,6 +15,8 @@ const MoodleTimestampSchema = z.number().int().nonnegative();
 const MoodleVisibilitySchema = z.union([
   z.number().int().min(0).max(1),
   z.boolean().transform((visible) => (visible ? 1 : 0)),
+  z.literal("0").transform(() => 0),
+  z.literal("1").transform(() => 1),
 ]);
 
 export const MoodleDashboardCourseSchema = z.object({
@@ -103,9 +105,10 @@ export type MoodleCourseModule = Readonly<
 export const MoodleCourseSectionSchema = z.object({
   id: MoodleSectionIdSchema,
   name: MoodleTextSchema,
-  visible: z.number().int().min(0).max(1).optional(),
-  summary: MoodleHtmlSchema.optional(),
-  modules: z.array(MoodleCourseModuleSchema),
+  visible: MoodleVisibilitySchema.nullish().transform((value) => value ?? undefined),
+  summary: MoodleHtmlSchema.nullish().transform((value) => value ?? undefined),
+  // Empty sections are returned as null by some Moodle plugins instead of [].
+  modules: z.array(MoodleCourseModuleSchema).nullish().transform((value) => value ?? []),
 });
 export type MoodleCourseSection = Readonly<
   z.infer<typeof MoodleCourseSectionSchema>

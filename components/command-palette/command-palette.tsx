@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpen,
   ChatCircleDots,
+  File,
   FileText,
   MagnifyingGlass,
   SquaresFour,
@@ -27,22 +28,46 @@ type CommandPaletteProps = Readonly<{
   commands: readonly CommandItem[];
 }>;
 
+const RECENT_COMMANDS_STORAGE_KEY = "next-moodle-recent-commands";
+const MAX_RECENT_COMMANDS = 6;
+
+function readRecentCommands(): readonly CommandItem[] {
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(RECENT_COMMANDS_STORAGE_KEY) ?? "[]");
+    if (!Array.isArray(value)) return [];
+    return value.flatMap((item): readonly CommandItem[] => {
+      if (typeof item !== "object" || item === null) return [];
+      const record = item as Record<string, unknown>;
+      if (typeof record.href !== "string" || typeof record.label !== "string" || !Array.isArray(record.keywords)) return [];
+      if (!["activity", "course", "file", "message", "screen"].includes(String(record.kind))) return [];
+      const keywords = record.keywords.filter((keyword): keyword is string => typeof keyword === "string");
+      return [{ href: record.href, keywords, kind: record.kind as CommandItem["kind"], label: record.label }];
+    });
+  } catch {
+    return [];
+  }
+}
+
 export function CommandPalette({ commands }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [remoteCommands, setRemoteCommands] = useState<readonly CommandItem[]>([]);
+  const [recentCommands, setRecentCommands] = useState<readonly CommandItem[]>([]);
+  const [remoteState, setRemoteState] = useState<"idle" | "loading" | "error">("idle");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const listId = useId();
   const titleId = useId();
-  const results = useMemo(() => searchCommands([...commands, ...remoteCommands], query), [commands, query, remoteCommands]);
+  const results = useMemo(() => searchCommands([...recentCommands, ...commands, ...remoteCommands], query), [commands, query, recentCommands, remoteCommands]);
 
   const openPalette = useCallback(() => {
     setQuery("");
     setRemoteCommands([]);
+    setRemoteState("idle");
+    setRecentCommands(readRecentCommands());
     setSelectedIndex(0);
     setOpen(true);
   }, []);
@@ -85,25 +110,31 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
+        setRemoteState("loading");
         const response = await fetch(`/api/search?q=${encodeURIComponent(normalized)}`, {
           cache: "no-store",
           credentials: "same-origin",
           signal: controller.signal,
         });
-        if (!response.ok) return;
+        if (!response.ok) {
+          setRemoteState("error");
+          return;
+        }
         const payload: unknown = await response.json();
         if (typeof payload !== "object" || payload === null || !("results" in payload) || !Array.isArray(payload.results)) return;
         const parsed = payload.results.flatMap((item): readonly CommandItem[] => {
           if (typeof item !== "object" || item === null) return [];
           const record = item as Record<string, unknown>;
           if (typeof record["href"] !== "string" || typeof record["label"] !== "string" || !Array.isArray(record["keywords"])) return [];
-          if (record["kind"] !== "activity" && record["kind"] !== "message") return [];
+          if (record["kind"] !== "activity" && record["kind"] !== "file" && record["kind"] !== "message") return [];
           const keywords = record["keywords"].filter((keyword): keyword is string => typeof keyword === "string");
           return [{ href: record["href"], keywords, kind: record["kind"], label: record["label"] }];
         });
         setRemoteCommands(parsed);
         setSelectedIndex(0);
+        setRemoteState("idle");
       } catch {
+        if (!controller.signal.aborted) setRemoteState("error");
         return;
       }
     }, 250);
@@ -114,6 +145,10 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
   }, [open, query]);
 
   const choose = (command: CommandItem) => {
+    const nextRecent = [command, ...recentCommands.filter((item) => item.href !== command.href || item.kind !== command.kind)]
+      .slice(0, MAX_RECENT_COMMANDS);
+    setRecentCommands(nextRecent);
+    window.localStorage.setItem(RECENT_COMMANDS_STORAGE_KEY, JSON.stringify(nextRecent));
     setOpen(false);
     router.push(command.href);
   };
@@ -122,6 +157,8 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
     <div className="ui-command-root" ref={rootRef}>
       <Button
         aria-label="移動・検索"
+        aria-expanded={open}
+        aria-haspopup="dialog"
         className="ui-command-trigger"
         icon={<MagnifyingGlass aria-hidden size={18} weight="regular" />}
         onClick={openPalette}
@@ -156,6 +193,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
               onChange={(event) => {
                 setQuery(event.currentTarget.value);
                 setRemoteCommands([]);
+                setRemoteState("idle");
                 setSelectedIndex(0);
               }}
               onKeyDown={(event) => {
@@ -204,18 +242,20 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                   <BookOpen aria-hidden size={20} weight="regular" />
                 ) : command.kind === "activity" ? (
                   <FileText aria-hidden size={20} weight="regular" />
+                ) : command.kind === "file" ? (
+                  <File aria-hidden size={20} weight="regular" />
                 ) : command.kind === "message" ? (
                   <ChatCircleDots aria-hidden size={20} weight="regular" />
                 ) : (
                   <SquaresFour aria-hidden size={20} weight="regular" />
                 )}
                 <span>{command.label}</span>
-                <small>{command.kind === "course" ? "コース" : command.kind === "activity" ? "活動" : command.kind === "message" ? "会話" : "画面"}</small>
+                <small>{command.kind === "course" ? "コース" : command.kind === "activity" ? "活動" : command.kind === "file" ? "ファイル" : command.kind === "message" ? "会話" : "画面"}</small>
                 <ArrowRight aria-hidden size={17} weight="regular" />
               </button>
             ))}
           </div>
-          <p className="ui-command-help">上下キーで選択、Enterで移動、Escapeで閉じます。</p>
+          <p aria-live="polite" className="ui-command-help">{remoteState === "loading" ? "Moodleを検索中…" : remoteState === "error" ? "Moodle検索を完了できませんでした。画面内の候補は利用できます。" : "上下キーで選択、Enterで移動、Escapeで閉じます。"}</p>
         </div>
       </dialog>
     </div>

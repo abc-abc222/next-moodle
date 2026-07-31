@@ -2,6 +2,10 @@ import { z } from "zod";
 
 const TextSchema = z.string().max(16_384);
 const TimestampSchema = z.number().int().nonnegative();
+const OptionalProfileTextSchema = TextSchema.nullish().transform((value) => {
+  const normalized = value?.trim();
+  return normalized === undefined || normalized === "" ? undefined : normalized;
+});
 
 export const GradeReportSchema = z.object({
   usergrades: z.array(z.object({
@@ -31,11 +35,13 @@ export const EnrolledUsersSchema = z.array(z.object({
 
 export const UserProfilesSchema = z.array(z.object({
   id: z.number().int().positive(),
-  fullname: TextSchema,
-  email: z.string().email().optional(),
-  city: TextSchema.optional(),
-  country: TextSchema.optional(),
-  description: TextSchema.optional(),
+  // The core profile endpoint can return null or an empty string for optional
+  // fields, and email is display data rather than input we need to validate.
+  fullname: OptionalProfileTextSchema.transform((value) => value ?? "Moodleユーザー"),
+  email: OptionalProfileTextSchema,
+  city: OptionalProfileTextSchema,
+  country: OptionalProfileTextSchema,
+  description: OptionalProfileTextSchema,
 }));
 
 export const PrivateFilesInfoSchema = z.object({

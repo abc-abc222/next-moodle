@@ -2,9 +2,9 @@ import type { MoodleReadFailureReason } from "./queries/dashboard";
 
 export type MoodlePageFailureDisposition =
   | "capability"
-  | "error"
   | "forbidden"
-  | "reauthenticate";
+  | "reauthenticate"
+  | "recoverable";
 
 export function dispositionForMoodlePageFailure(
   reason: MoodleReadFailureReason,
@@ -18,14 +18,6 @@ export function dispositionForMoodlePageFailure(
       return "forbidden";
     case "invalid_response":
     case "outage":
-      return "error";
-  }
-}
-
-export class MoodlePageReadError extends Error {
-  override readonly name = "MoodlePageReadError";
-
-  constructor(readonly reason: "invalid_response" | "outage") {
-    super(`Moodle page read failed: ${reason}`);
+      return "recoverable";
   }
 }

@@ -5,7 +5,8 @@ import { cache } from "react";
 import { createAuthenticatedMoodleClient } from "@/lib/auth/server";
 import type { MoodleCapabilityManifest } from "@/lib/moodle/capabilities";
 import { ActivityAdapterPayloadSchema, type ActivityAdapterPayload } from "@/lib/moodle/activities/contracts";
-import { resolveActivityAdapter, type ActivityAdapterResolution } from "@/lib/moodle/activities/registry";
+import { resolveActivityAdapter, resolveActivityDelivery, type ActivityAdapterResolution } from "@/lib/moodle/activities/registry";
+import type { CapabilityDelivery } from "@/lib/moodle/capabilities";
 import { MoodleResponseError } from "@/lib/moodle/errors";
 import {
   MOODLE_FUNCTIONS,
@@ -29,6 +30,7 @@ export type ActivityFile = Readonly<{
 
 export type ActivityWorkspaceDetail = Readonly<{
   adapter: ActivityAdapterResolution;
+  delivery: CapabilityDelivery;
   availability: "available" | "hidden" | "restricted";
   completion: "complete" | "incomplete" | "none";
   companion: ActivityAdapterPayload | null;
@@ -83,6 +85,7 @@ export const readActivityWorkspace = cache(
             kind: "ready",
             data: {
               adapter,
+              delivery: resolveActivityDelivery(courseModule.modname, request.manifest),
               availability: "available",
               completion: courseModule.completion === undefined || courseModule.completion === 0
                 ? "none"

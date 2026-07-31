@@ -35,4 +35,14 @@ describe("searchCommands", () => {
 
     expect(result.map((command) => command.kind)).toEqual(["screen", "course", "course"]);
   });
+
+  test("Given duplicate command results, When searching, Then one stable destination remains", () => {
+    const result = searchCommands([
+      commands[0],
+      { ...commands[0], keywords: ["recent"] },
+    ], "");
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.href).toBe("/dashboard");
+  });
 });

@@ -1,7 +1,7 @@
 export type CommandItem = {
   readonly href: string;
   readonly keywords: readonly string[];
-  readonly kind: "activity" | "course" | "message" | "screen";
+  readonly kind: "activity" | "course" | "file" | "message" | "screen";
   readonly label: string;
 };
 
@@ -14,8 +14,15 @@ export function searchCommands(
   query: string,
 ): readonly CommandItem[] {
   const terms = normalizedText(query).split(/\s+/).filter(Boolean);
+  const seen = new Set<string>();
+  const unique = (command: CommandItem): boolean => {
+    const key = `${command.kind}:${command.href}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  };
   if (terms.length === 0) {
-    return commands.slice(0, 12);
+    return commands.filter(unique).slice(0, 12);
   }
   return commands
     .filter((command) => {
@@ -30,5 +37,6 @@ export function searchCommands(
       const rightStarts = normalizedText(right.label).startsWith(needle);
       return Number(rightStarts) - Number(leftStarts);
     })
+    .filter(unique)
     .slice(0, 12);
 }

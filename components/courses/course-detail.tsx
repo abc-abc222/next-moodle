@@ -122,7 +122,7 @@ export function CourseDetail({ config, data }: Readonly<{
                             </span>
                             {item.availability !== "available" ? <Badge tone="warning">利用制限</Badge> : null}
                             {item.adapterState === "companion" ? <Badge tone="accent">拡張対応</Badge> : null}
-                            {item.adapterState === "moodle_fallback" ? <Badge tone="info">Moodleで回答</Badge> : null}
+                            {item.delivery === "runtime" ? <Badge tone="info">隔離実行</Badge> : null}
                             {item.adapterState === "adapter_required" ? <Badge tone="info">アダプターが必要</Badge> : null}
                             {item.adapterState === "unavailable" ? <WarningCircle aria-label="API未許可" className="ui-course-activity__warning" size={18} /> : null}
                             <ActivityAction activity={item} />

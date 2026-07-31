@@ -34,6 +34,16 @@ export const CAPABILITY_STATES = [
 export const CapabilityStateSchema = z.enum(CAPABILITY_STATES);
 export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
 
+/**
+ * The rendering boundary for a capability. A feature may be available but
+ * still require Moodle's isolated runtime instead of a re-created form.
+ */
+export const CAPABILITY_DELIVERIES = [
+  "native", "adapter", "runtime", "unavailable",
+] as const;
+export const CapabilityDeliverySchema = z.enum(CAPABILITY_DELIVERIES);
+export type CapabilityDelivery = z.infer<typeof CapabilityDeliverySchema>;
+
 export const STUDENT_OPERATION_KEYS = [
   "assignment.save",
   "assignment.finalize",
@@ -56,7 +66,9 @@ export const StudentOperationKeySchema = z.enum(STUDENT_OPERATION_KEYS);
 export type StudentOperationKey = z.infer<typeof StudentOperationKeySchema>;
 
 export const MoodleCapabilityManifestSchema = z.object({
-  version: z.literal(3),
+  // v3 used the same compact bitset and has no unsafe presentation data. Keep
+  // active student sessions valid while normalizing them to the v4 contract.
+  version: z.union([z.literal(3), z.literal(4)]).transform(() => 4 as const),
   moodleRelease: z.string().min(1).max(120),
   functionHash: z.string().regex(/^[a-f0-9]{64}$/),
   functionBits: z.string().min(1).max(2_048).regex(/^[A-Za-z0-9_-]+$/),
@@ -143,6 +155,11 @@ const ACTIVITY_FEATURE = {
   url: "resources",
 } as const satisfies Record<ActivityModuleName, StudentFeatureKey>;
 
+const RUNTIME_MODULES: ReadonlySet<ActivityModuleName> = new Set([
+  "scorm",
+  "h5pactivity",
+]);
+
 function stateFor(
   requirements: Requirements,
   available: ReadonlySet<string>,
@@ -151,6 +168,21 @@ function stateFor(
   if (requirements.all.every((name) => available.has(name))) return "available";
   if (requirements.adapterEligible === true && adapterAvailable) return "adapter_required";
   return "unavailable";
+}
+
+function deliveryForFeature(state: CapabilityState): CapabilityDelivery {
+  if (state === "available") return "native";
+  return state === "adapter_required" ? "adapter" : "unavailable";
+}
+
+function deliveryForActivity(
+  moduleName: ActivityModuleName,
+  state: CapabilityState,
+  runtimeAvailable: boolean,
+): CapabilityDelivery {
+  if (state === "unavailable") return "unavailable";
+  if (RUNTIME_MODULES.has(moduleName) && runtimeAvailable) return "runtime";
+  return state === "adapter_required" ? "adapter" : "native";
 }
 
 type CompanionAdapterCapability = Readonly<{
@@ -208,6 +240,34 @@ export function capabilityForOperation(
   return manifest.operations[operation];
 }
 
+export function featureDeliveryFor(
+  manifest: MoodleCapabilityManifest,
+  feature: StudentFeatureKey,
+): CapabilityDelivery {
+  return deliveryForFeature(manifest.features[feature]);
+}
+
+export function activityDeliveryFor(
+  manifest: MoodleCapabilityManifest,
+  moduleName: ActivityModuleName,
+): CapabilityDelivery {
+  const available = functionNamesFromBits(manifest.functionBits);
+  const runtimeAvailable = manifest.companion.contractVersion === 2 &&
+    available.has(MOODLE_FUNCTIONS.createRuntimeTicket);
+  return deliveryForActivity(
+    moduleName,
+    manifest.activityAdapters[moduleName],
+    runtimeAvailable,
+  );
+}
+
+export function pluginDeliveryFor(
+  manifest: MoodleCapabilityManifest,
+  moduleName: string,
+): CapabilityDelivery {
+  return manifest.companionModules.includes(moduleName) ? "adapter" : "unavailable";
+}
+
 export function deriveCapabilityManifest(
   input: CapabilityManifestInput,
 ): MoodleCapabilityManifest {
@@ -236,13 +296,13 @@ export function deriveCapabilityManifest(
         ),
       ),
     ]),
-  );
+  ) as Record<StudentFeatureKey, CapabilityState>;
   const activityAdapters = Object.fromEntries(
     ACTIVITY_MODULE_NAMES.map((moduleName) => [
       moduleName,
       features[ACTIVITY_FEATURE[moduleName]],
     ]),
-  );
+  ) as Record<ActivityModuleName, CapabilityState>;
   const operations = Object.fromEntries(
     STUDENT_OPERATION_KEYS.map((key) => [
       key,
@@ -259,7 +319,7 @@ export function deriveCapabilityManifest(
     }))
     .digest("hex");
   return MoodleCapabilityManifestSchema.parse({
-    version: 3,
+    version: 4,
     moodleRelease: input.moodleRelease ?? "unknown",
     functionHash: createHash("sha256").update(names.join("\n")).digest("hex"),
     functionBits: encodeFunctionBits(available),

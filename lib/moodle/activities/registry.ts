@@ -1,8 +1,9 @@
 import type {
   ActivityModuleName,
+  CapabilityDelivery,
   MoodleCapabilityManifest,
 } from "../capabilities";
-import { ActivityModuleNameSchema } from "../capabilities";
+import { ActivityModuleNameSchema, activityDeliveryFor, pluginDeliveryFor } from "../capabilities";
 import type { StudentFeatureKey } from "../capabilities";
 import {
   OfficialActivityAdapterSchema,
@@ -74,4 +75,18 @@ export function resolveActivityAdapter(
     return { kind: "unavailable", feature, moduleName: parsedModule.data };
   }
   return { kind: "native", adapter };
+}
+
+/**
+ * Unknown activities never receive an optimistic native default. A companion
+ * must explicitly register them before the student workspace can offer a
+ * typed adapter or isolated runtime.
+ */
+export function resolveActivityDelivery(
+  moduleName: string,
+  manifest: MoodleCapabilityManifest,
+): CapabilityDelivery {
+  const parsedModule = ActivityModuleNameSchema.safeParse(moduleName);
+  if (parsedModule.success) return activityDeliveryFor(manifest, parsedModule.data);
+  return pluginDeliveryFor(manifest, moduleName);
 }
