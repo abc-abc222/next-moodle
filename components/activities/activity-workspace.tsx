@@ -23,6 +23,7 @@ import { CompletionToggle } from "./completion-toggle";
 import { DatabaseWorkspace } from "./database-workspace";
 import { FeedbackWorkspace } from "./feedback-workspace";
 import { ForumWorkspace } from "./forum-workspace";
+import { ForumHtmlWorkspace } from "./forum-html-workspace";
 import { GlossaryWorkspace } from "./glossary-workspace";
 import { LessonWorkspace } from "./lesson-workspace";
 import { QuizWorkspace } from "./quiz-workspace";
@@ -66,6 +67,7 @@ export function ActivityWorkspace({ canUpdateCompletion, config, data, native }:
   const dateFormat = dateTimeFormatter(config.locale, { dateStyle: "medium", timeStyle: "short", timeZone: config.timeZone });
   const typeLabel = data.resolution.kind === "api" ? data.resolution.definition.label : data.moduleType === "questionnaire" ? "アンケート" : data.moduleType === "autoattendmod" ? "出席" : data.moduleType;
   const deliveryLabel = data.delivery === "api" ? "公式API" : "HTML変換";
+  const isForumHtmlFallback = data.moduleType === "forum" && native === undefined && data.htmlScreen !== null;
   const activityDetails = (
     <div className="ui-activity-details">
       <div className="ui-activity-state">
@@ -88,9 +90,9 @@ export function ActivityWorkspace({ canUpdateCompletion, config, data, native }:
       content={(
         <div className="ui-activity-document" aria-label="アクティビティ作業面">
           {data.availability !== "available" ? <Notice title="現在このアクティビティは利用できません" tone="warning"><p>公開条件または受講条件を確認してください。</p></Notice> : null}
-          {isEmptyMoodleDocument(data.description) ? <p className="ui-activity-empty">説明は登録されていません。</p> : <RichContent className="ui-rich-content" document={data.description} />}
+          {isEmptyMoodleDocument(data.description) ? isForumHtmlFallback ? null : <p className="ui-activity-empty">説明は登録されていません。</p> : <RichContent className="ui-rich-content" document={data.description} />}
           {native === undefined ? null : <NativePanel cmid={data.id} config={config} native={native} />}
-          {data.htmlScreen === null ? null : <HtmlActivityWorkspace cmid={data.id} data={publicHtmlActivityScreen(data.htmlScreen)} />}
+          {data.htmlScreen === null ? null : data.moduleType === "forum" && native === undefined ? <ForumHtmlWorkspace cmid={data.id} screen={data.htmlScreen.screen} /> : <HtmlActivityWorkspace cmid={data.id} data={publicHtmlActivityScreen(data.htmlScreen)} />}
           {data.files.length === 0 ? null : <section className="ui-activity-files" aria-labelledby="activity-files-title"><h2 id="activity-files-title">教材ファイル</h2><ul className="ui-ledger">{data.files.map((file) => <li key={`${file.filename}-${file.filesize}`}><File aria-hidden size={19} /><span><strong>{file.filename}</strong><small>{file.mimetype} · {formatBytes(file.filesize)}</small></span>{file.downloadUrl === null ? <span>取得不可</span> : <a href={file.downloadUrl}><DownloadSimple aria-hidden size={17} />ダウンロード</a>}</li>)}</ul></section>}
         </div>
       )}

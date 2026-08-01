@@ -84,7 +84,7 @@ export function MoodleScreenForm({ actionEndpoint, className, form, layout = "de
   layout?: "compact-action" | "default";
   onPrevious?: () => void;
   onScreenChange: (screen: MoodleScreenModel) => void;
-  presentation?: "assignment" | "default";
+  presentation?: "assignment" | "default" | "forum";
 }>) {
   const router = useRouter();
   const statusRef = useRef<HTMLDivElement>(null);
@@ -204,8 +204,9 @@ export function MoodleScreenForm({ actionEndpoint, className, form, layout = "de
   const reviewAction = reviewActionId === null ? undefined : form.actions.find((action) => action.id === reviewActionId);
   const isNavigationForm = form.controls.length === 0 && form.actions.some((action) => action.purpose === "next");
   const isAssignmentSubmission = presentation === "assignment" && form.title === "入力フォーム";
-  const heading = isNavigationForm && isAssignmentSubmission ? "提出を開始する" : isAssignmentSubmission ? "提出内容を入力" : form.title;
-  const statusMessage = message || (isNavigationForm ? presentation === "assignment" ? "入力欄を開きます。保存・提出はまだ行いません。" : "次の画面で提出内容を入力できます。" : "入力内容はMoodleへ直接保存されます。");
+  const isForumSearch = presentation === "forum" && form.actions.some((action) => action.purpose === "search");
+  const heading = isNavigationForm && isAssignmentSubmission ? "提出を開始する" : isAssignmentSubmission ? "提出内容を入力" : isForumSearch && form.title === "入力フォーム" ? "フォーラムを検索" : form.title;
+  const statusMessage = message || (isNavigationForm ? presentation === "assignment" ? "入力欄を開きます。保存・提出はまだ行いません。" : "次の画面で提出内容を入力できます。" : isForumSearch ? "キーワードと一致する投稿を検索します。" : "入力内容はMoodleへ直接保存されます。");
   const actionButtons = state === "reviewing"
     ? <><Button onClick={() => { setReviewActionId(null); setState("editing"); }} type="button">戻る</Button>{reviewAction === undefined ? null : <Button onClick={() => void send(reviewAction)} type="button" variant={reviewAction.purpose === "delete" ? "danger" : "primary"}>{reviewAction.purpose === "delete" ? "削除を確定" : "この内容で確定"}</Button>}</>
     : form.actions.map((action) => {
@@ -216,7 +217,7 @@ export function MoodleScreenForm({ actionEndpoint, className, form, layout = "de
   if (layout === "compact-action") {
     return <form className={["ui-html-form", className].filter(Boolean).join(" ")} noValidate onKeyDown={protectIme} onSubmit={submit}><p aria-live="polite" className="ui-assignment-html__start-note" ref={statusRef} tabIndex={-1}>{state === "error" ? <Warning aria-hidden size={18} /> : state === "success" ? <CheckCircle aria-hidden size={18} /> : <ClipboardText aria-hidden size={18} />}{statusMessage}</p><footer>{actionButtons}</footer></form>;
   }
-  return <form className={["ui-html-form", className].filter(Boolean).join(" ")} noValidate onKeyDown={protectIme} onSubmit={submit}><header><div><span className="ui-kicker">{isNavigationForm || isAssignmentSubmission ? "Submission" : "Form"}</span><h2>{heading}</h2></div><span>{isNavigationForm ? "入力前" : `${progress.answered} / ${progress.total} 入力`}</span></header>{state === "reviewing" ? <section className="ui-html-form__review" aria-label={reviewAction?.purpose === "delete" ? "削除確認" : "回答確認"}><h3>{reviewAction?.purpose === "delete" ? "削除する内容を確認" : "回答内容を確認"}</h3><dl>{form.controls.map((control) => <div key={control.id}><dt>{control.label}</dt><dd>{answerLabel(control, values[control.id]) || "未回答"}</dd></div>)}</dl></section> : <div className="ui-html-form__controls">{form.controls.map((control) => <MoodleControl control={control} error={errors[control.id]} key={control.id} onChange={(value) => change(control.id, value)} value={values[control.id]} />)}</div>}<div aria-live="polite" className="ui-html-form__status" ref={statusRef} tabIndex={-1}>{state === "error" ? <Warning aria-hidden size={18} /> : state === "success" ? <CheckCircle aria-hidden size={18} /> : <ClipboardText aria-hidden size={18} />}{statusMessage}</div><footer>{actionButtons}</footer></form>;
+  return <form className={["ui-html-form", className].filter(Boolean).join(" ")} noValidate onKeyDown={protectIme} onSubmit={submit}><header><div><span className="ui-kicker">{isNavigationForm || isAssignmentSubmission ? "Submission" : isForumSearch ? "Search" : "Form"}</span><h2>{heading}</h2></div><span>{isNavigationForm ? "入力前" : `${progress.answered} / ${progress.total} 入力`}</span></header>{state === "reviewing" ? <section className="ui-html-form__review" aria-label={reviewAction?.purpose === "delete" ? "削除確認" : "回答確認"}><h3>{reviewAction?.purpose === "delete" ? "削除する内容を確認" : "回答内容を確認"}</h3><dl>{form.controls.map((control) => <div key={control.id}><dt>{control.label}</dt><dd>{answerLabel(control, values[control.id]) || "未回答"}</dd></div>)}</dl></section> : <div className="ui-html-form__controls">{form.controls.map((control) => <MoodleControl control={control} error={errors[control.id]} key={control.id} onChange={(value) => change(control.id, value)} value={values[control.id]} />)}</div>}<div aria-live="polite" className="ui-html-form__status" ref={statusRef} tabIndex={-1}>{state === "error" ? <Warning aria-hidden size={18} /> : state === "success" ? <CheckCircle aria-hidden size={18} /> : <ClipboardText aria-hidden size={18} />}{statusMessage}</div><footer>{actionButtons}</footer></form>;
 }
 
 export function MoodleScreenWorkspace({ actionEndpoint, kicker, screen, testId = "moodle-screen-workspace" }: Readonly<{

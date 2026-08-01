@@ -15,7 +15,9 @@ import {
 import { useEffect, useRef } from "react";
 
 type RichTextEditorProps = Readonly<{
+  ariaLabel?: string;
   disabled: boolean;
+  editorId?: string;
   initialContent: string;
   onChange: (html: string) => void;
 }>;
@@ -30,6 +32,12 @@ export function RichTextEditor(props: RichTextEditorProps) {
   const editor = useEditor({
     content: props.initialContent,
     editable: !props.disabled,
+    editorProps: {
+      attributes: {
+        "aria-label": props.ariaLabel ?? "文章エディター",
+        ...(props.editorId === undefined ? {} : { id: props.editorId }),
+      },
+    },
     extensions: [
       StarterKit.configure({
         link: { openOnClick: false, protocols: ["http", "https", "mailto"] },

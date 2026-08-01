@@ -66,6 +66,19 @@ describe("Moodle HTML document pipeline", () => {
     expect(JSON.stringify(document)).not.toContain("onclick");
   });
 
+  test("decodes Moodle rich-editor values before rendering the quiz editor", () => {
+    const document = moodleQuizDocumentFromHtml(
+      '<textarea name="answer">&amp;lt;p&amp;gt;&amp;amp;lt;strong&amp;amp;gt;【解答】&amp;amp;lt;/strong&amp;amp;gt;&amp;lt;br&amp;gt;①&amp;lt;/p&amp;gt;&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;</textarea>',
+      { siteUrl: SITE_URL },
+    );
+    const textarea = document.nodes.find((node) => node.kind === "textarea");
+
+    expect(textarea?.kind).toBe("textarea");
+    if (textarea?.kind !== "textarea") throw new Error("textarea fixture was not parsed");
+    expect(textarea.value).toBe("<p><strong>【解答】</strong><br />①</p>");
+    expect(textarea.value).not.toContain("script");
+  });
+
   test("allows only a same-origin Moodle activity URL with one id parameter", () => {
     expect(safeMoodleUrl("https://moodle.example.test/moodle/mod/questionnaire/view.php?id=42", SITE_URL)).toBe("https://moodle.example.test/moodle/mod/questionnaire/view.php?id=42");
     expect(safeMoodleUrl("https://moodle.example.test/moodle/mod/questionnaire/view.php?id=42&next=%2F", SITE_URL)).toBeNull();

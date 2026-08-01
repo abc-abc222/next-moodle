@@ -1,4 +1,5 @@
 import { parseDocument } from "htmlparser2";
+import { decode as decodeHtmlEntities, EntityLevel } from "entities";
 
 import {
   sanitizeMoodleHtml,
@@ -133,6 +134,24 @@ function collectText(nodes: readonly ParsedNode[] | undefined): string {
   return (nodes ?? []).map((node) => node.type === "text" ? text(node) : collectText(node.children)).join("");
 }
 
+/**
+ * Moodle's HTML editor serialises its initial value inside a textarea.  A
+ * textarea is an RCDATA element, so htmlparser2 intentionally leaves entities
+ * such as `&amp;lt;p&amp;gt;` encoded.  Showing that wire representation to a
+ * student makes the editor look broken. Decode the bounded number of layers
+ * Moodle can add, while keeping the value as text (it is still submitted via
+ * the original form control).
+ */
+function decodeTextareaValue(value: string): string {
+  let decoded = value;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const next = decodeHtmlEntities(decoded, EntityLevel.HTML);
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded;
+}
+
 function parseNode(node: ParsedNode): readonly MoodleHtmlNode[] {
   if (node.type === "text") return text(node) === "" ? [] : [{ kind: "text", value: text(node) }];
   if (node.type !== "tag") return parseChildren(node.children);
@@ -176,7 +195,7 @@ function parseNode(node: ParsedNode): readonly MoodleHtmlNode[] {
       return [{ kind: "input", inputType, checked: "checked" in attributes, disabled: "disabled" in attributes, ...(attributes.name === undefined ? {} : { name: attributes.name }), ...(attributes.value === undefined ? {} : { value: attributes.value }), ...(attributes.id === undefined ? {} : { id: attributes.id }), ...(attributes.min === undefined ? {} : { min: attributes.min }), ...(attributes.max === undefined ? {} : { max: attributes.max }), ...(numericAttribute(attributes.maxlength, 100_000) === undefined ? {} : { maxLength: numericAttribute(attributes.maxlength, 100_000) }), ...(attributes.step === undefined ? {} : { step: attributes.step }), ...(className === undefined ? {} : { className }) }];
     }
     case "select": return [{ kind: "select", disabled: "disabled" in attributes, multiple: "multiple" in attributes, options: (node.children ?? []).filter((child) => child.type === "tag" && child.name === "option").map(optionFrom), ...(attributes.name === undefined ? {} : { name: attributes.name }), ...(attributes.id === undefined ? {} : { id: attributes.id }) }];
-    case "textarea": return [{ kind: "textarea", disabled: "disabled" in attributes, value: collectText(node.children), ...(attributes.name === undefined ? {} : { name: attributes.name }), ...(attributes.id === undefined ? {} : { id: attributes.id }), ...(numericAttribute(attributes.rows, 100) === undefined ? {} : { rows: numericAttribute(attributes.rows, 100) }), ...(numericAttribute(attributes.cols, 1_000) === undefined ? {} : { cols: numericAttribute(attributes.cols, 1_000) }), ...(numericAttribute(attributes.maxlength, 100_000) === undefined ? {} : { maxLength: numericAttribute(attributes.maxlength, 100_000) }) }];
+    case "textarea": return [{ kind: "textarea", disabled: "disabled" in attributes, value: decodeTextareaValue(collectText(node.children)), ...(attributes.name === undefined ? {} : { name: attributes.name }), ...(attributes.id === undefined ? {} : { id: attributes.id }), ...(numericAttribute(attributes.rows, 100) === undefined ? {} : { rows: numericAttribute(attributes.rows, 100) }), ...(numericAttribute(attributes.cols, 1_000) === undefined ? {} : { cols: numericAttribute(attributes.cols, 1_000) }), ...(numericAttribute(attributes.maxlength, 100_000) === undefined ? {} : { maxLength: numericAttribute(attributes.maxlength, 100_000) }) }];
     case "button": return [{ kind: "button", children, ...(attributes["data-quiz-action"] === "clear" ? { action: "clear" as const } : {}), ...(className === undefined ? {} : { className }) }];
     default: return children;
   }
@@ -192,7 +211,19 @@ export function moodleDocumentFromHtml(value: string, options: Readonly<{ siteUr
 }
 
 export function moodleQuizDocumentFromHtml(value: string, options: Readonly<{ siteUrl: string }>): MoodleDocument {
-  return documentFromSanitizedHtml(sanitizeQuizQuestionHtml(value, options));
+  return sanitizeQuizEditorValues(documentFromSanitizedHtml(sanitizeQuizQuestionHtml(value, options)), options);
+}
+
+function sanitizeQuizEditorValues(document: MoodleDocument, options: Readonly<{ siteUrl: string }>): MoodleDocument {
+  function sanitizeNode(node: MoodleHtmlNode): MoodleHtmlNode {
+    if (node.kind === "textarea") {
+      return { ...node, value: sanitizeMoodleHtml(node.value, options) };
+    }
+    if (node.kind === "list") return { ...node, items: node.items.map(sanitizeNode) };
+    if ("children" in node) return { ...node, children: node.children.map(sanitizeNode) };
+    return node;
+  }
+  return { ...document, nodes: document.nodes.map(sanitizeNode) };
 }
 
 export function isEmptyMoodleDocument(value: MoodleDocument): boolean {

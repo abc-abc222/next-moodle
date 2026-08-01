@@ -17,4 +17,15 @@ describe("HTML activity delivery", () => {
       expect(resolveActivity(moduleName, manifest)).toEqual({ kind: "html", moduleName });
     }
   });
+
+  test("keeps the forum eligible for an HTML fallback when its API response changes", () => {
+    const manifest = deriveCapabilityManifest({
+      fileAccess: { download: true, upload: true },
+      functionNames: MOODLE_KNOWN_FUNCTION_NAMES,
+      moodleRelease: "4.5",
+    });
+
+    expect(resolveActivity("forum", manifest)).toMatchObject({ kind: "api" });
+    expect(activityDeliveryFor(manifest, "forum")).toBe("api");
+  });
 });
