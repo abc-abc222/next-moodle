@@ -43,6 +43,7 @@ function ConversationContext({ conversations, selectedId }: Readonly<{
   return (
     <ContextPanel
       count={conversations.length}
+      mobileAlwaysOpen
       storageKey="messages"
       title={<span className="ui-conversation-context-title">会話<TransitionLink aria-label="先生へ新規連絡" className="ui-messages-new" href="/messages/new" intent="drill-in"><PencilSimpleLine aria-hidden size={18} /></TransitionLink></span>}
     >
@@ -103,7 +104,7 @@ export function ConversationView({ config, conversation, conversations }: Readon
       className="ui-message-thread-frame"
       content={(
         <section aria-label={`${conversation.name}の会話履歴`} className="ui-message-thread">
-          <ConversationScrollRegion messageCount={conversation.messages.length}>
+          <ConversationScrollRegion key={conversation.id} messageCount={conversation.messages.length}>
             <ol>
               {conversation.messages.map((message) => (
                 <li data-own={message.fromCurrentUser ? "true" : undefined} key={message.id}>

@@ -1,7 +1,7 @@
-.ui-context-panel__body > nav { display: grid; padding: var(--space-2); }
-.ui-context-panel__body > nav a { display: flex; min-block-size: 2.75rem; align-items: center; gap: var(--space-2); padding: var(--space-2); border-radius: var(--shape-control); color: var(--text-secondary); font-size: var(--font-size-body-sm); text-decoration: none; }
-.ui-context-panel__body > nav a:hover { background: var(--surface-elevated); color: var(--text-primary); }
-.ui-context-panel__body > nav a[aria-current="page"] { box-shadow: inset 2px 0 0 var(--accent-500); background: var(--surface-selected); color: var(--text-primary); font-weight: 650; }
+.ui-student-area-navigation { display: grid; padding: var(--space-2); }
+.ui-student-area-navigation a { display: flex; min-block-size: 2.75rem; align-items: center; gap: var(--space-2); padding: var(--space-2); border-radius: var(--shape-control); color: var(--text-secondary); font-size: var(--font-size-body-sm); text-decoration: none; }
+.ui-student-area-navigation a:hover { background: var(--surface-elevated); color: var(--text-primary); }
+.ui-student-area-navigation a[aria-current="page"] { box-shadow: inset 2px 0 0 var(--accent-500); background: var(--surface-selected); color: var(--text-primary); font-weight: 650; }
 .ui-student-ledger { border-block-start: 0; }
 .ui-student-ledger li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; min-block-size: 4rem; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); }
 .ui-student-ledger li:hover { background: var(--surface-elevated); }

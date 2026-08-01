@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 
 type ConversationScrollRegionProps = Readonly<{
   children: ReactNode;
@@ -15,6 +15,10 @@ export function ConversationScrollRegion({ children, messageCount }: Conversatio
   const shouldStickToBottomRef = useRef(true);
   const initializedRef = useRef(false);
 
+  function scrollToBottom(viewport: HTMLDivElement): void {
+    viewport.scrollTop = viewport.scrollHeight;
+  }
+
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (viewport === null) return;
@@ -23,11 +27,29 @@ export function ConversationScrollRegion({ children, messageCount }: Conversatio
     if (!initializedRef.current || (hasNewMessage && shouldStickToBottomRef.current)) {
       // Assigning scrollTop avoids a visible route-refresh animation while a
       // learner is sending a reply or opening a conversation for the first time.
-      viewport.scrollTop = viewport.scrollHeight;
+      scrollToBottom(viewport);
     }
     previousMessageCountRef.current = messageCount;
     initializedRef.current = true;
   }, [messageCount]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (viewport === null) return;
+
+    const restoreViewport = () => {
+      if (!document.hidden && shouldStickToBottomRef.current) scrollToBottom(viewport);
+    };
+    const handleVisibilityChange = () => restoreViewport();
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(restoreViewport);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    resizeObserver?.observe(viewport);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   return (
     <div

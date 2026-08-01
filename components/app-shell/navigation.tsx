@@ -43,7 +43,7 @@ export function AppNavigation({ mobile = false }: Readonly<{ mobile?: boolean }>
             key={item.href}
             title={mobile ? undefined : item.label}
           >
-            <Icon aria-hidden size={21} weight="regular" />
+            <span aria-hidden className="ui-app-nav__icon"><Icon aria-hidden size={21} weight="regular" /></span>
             <span>{item.label}</span>
           </TransitionLink>
         );

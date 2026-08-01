@@ -7,10 +7,11 @@
 .ui-messages-index-frame .ui-page-frame__context,
 .ui-messages-index-frame .ui-context-panel__body { overflow-x: clip; }
 .ui-conversation-index { display: grid; min-inline-size: 0; max-inline-size: 100%; }
-.ui-conversation-index > a { display: grid; min-inline-size: 0; max-inline-size: 100%; grid-template-columns: auto minmax(0, 1fr) auto; min-block-size: 4.75rem; align-items: center; gap: var(--space-3); padding: var(--space-3); border-block-end: 1px solid var(--border-subtle); color: var(--text-primary); text-decoration: none; transition: background-color var(--motion-feedback), transform var(--motion-feedback); }
+.ui-conversation-index > a { display: grid; min-inline-size: 0; max-inline-size: 100%; grid-template-columns: 2.25rem minmax(0, 1fr) auto; min-block-size: 4.75rem; align-items: center; gap: var(--space-3); padding: var(--space-3); border-block-end: 1px solid var(--border-subtle); color: var(--text-primary); text-decoration: none; transition: background-color var(--motion-feedback), transform var(--motion-feedback); }
 .ui-conversation-index > a:hover { background: var(--surface-elevated); transform: translateX(1px); }
 .ui-conversation-index > a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--accent-500); background: var(--surface-selected); }
-.ui-conversation-index__mark { display: grid; inline-size: 2.25rem; block-size: 2.25rem; border: 1px solid var(--border-default); border-radius: var(--shape-card); color: var(--accent-400); place-items: center; }
+.ui-conversation-index__mark { box-sizing: border-box; display: grid; inline-size: 2.25rem; min-inline-size: 2.25rem; block-size: 2.25rem; min-block-size: 2.25rem; flex: 0 0 2.25rem; overflow: hidden; border: 1px solid var(--border-default); border-radius: var(--shape-card); color: var(--accent-400); place-items: center; }
+.ui-conversation-index__mark svg { display: block; inline-size: 1.125rem; block-size: 1.125rem; max-inline-size: none; flex: 0 0 1.125rem; }
 .ui-conversation-index a > span:nth-child(2) { display: grid; min-inline-size: 0; }
 .ui-conversation-index strong,
 .ui-conversation-index small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -23,7 +24,7 @@
 
 .ui-message-thread-frame { block-size: 100%; min-block-size: 0; overflow: hidden; }
 .ui-message-thread-frame .ui-page-frame__content { display: grid; min-block-size: 0; padding: 0; overflow: hidden; }
-.ui-message-thread { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-block-size: 0; overflow: hidden; background: color-mix(in srgb, var(--surface-primary) 88%, var(--surface-canvas)); }
+.ui-message-thread { display: grid; grid-template-rows: minmax(0, 1fr) auto; block-size: 100%; min-block-size: 0; overflow: hidden; background: color-mix(in srgb, var(--surface-primary) 88%, var(--surface-canvas)); }
 .ui-message-thread__scroll { min-block-size: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .ui-message-thread__scroll > ol { display: grid; align-content: end; gap: var(--space-3); min-block-size: 100%; margin: 0; padding: clamp(var(--space-4), 3vw, var(--space-8)); list-style: none; }
 .ui-message-thread__scroll > ol li { inline-size: min(36rem, 84%); padding: var(--space-3) var(--space-4); border: 1px solid var(--border-default); border-radius: var(--shape-card); background: var(--surface-elevated); box-shadow: 0 1px 0 rgb(10 8 5 / 8%); }
@@ -106,6 +107,10 @@
 @media (max-width: 47.99rem) {
   .ui-messages-index-frame .ui-page-frame__context { display: block; grid-row: 2; }
   .ui-messages-index-frame .ui-page-frame__content { display: none; }
+  .ui-messages-index-frame .ui-context-panel[data-mobile-always-open="true"][data-collapsed="true"] .ui-context-panel__header { justify-content: space-between; padding-inline: var(--space-4); }
+  .ui-messages-index-frame .ui-context-panel[data-mobile-always-open="true"][data-collapsed="true"] .ui-context-panel__heading { display: flex; }
+  .ui-messages-index-frame .ui-context-panel[data-mobile-always-open="true"][data-collapsed="true"] .ui-context-panel__body { display: block; }
+  .ui-messages-index-frame .ui-context-panel[data-mobile-always-open="true"][data-collapsed="true"] .ui-context-panel__header button { display: none; }
   .ui-message-thread__scroll > ol li { inline-size: min(38rem, 92%); }
   .ui-message-composer__footer { grid-template-columns: minmax(0, 1fr) auto; }
   .ui-message-composer__footer > span:first-child { grid-column: 1 / -1; }

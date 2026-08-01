@@ -8,13 +8,14 @@ import { contextPanelStorageKey, peekContextPanelPreference, readContextPanelPre
 type ContextPanelProps = Readonly<{
   children: ReactNode;
   count?: ReactNode;
+  mobileAlwaysOpen?: boolean;
   storageKey: "course" | "messages" | "student";
   title: ReactNode;
 }>;
 
 const STORAGE_EVENT = "next-moodle-context-layout";
 
-export function ContextPanel({ children, count, storageKey, title }: ContextPanelProps) {
+export function ContextPanel({ children, count, mobileAlwaysOpen = false, storageKey, title }: ContextPanelProps) {
   const subscribe = useCallback((onStoreChange: () => void) => {
     window.addEventListener("storage", onStoreChange);
     window.addEventListener(STORAGE_EVENT, onStoreChange);
@@ -41,7 +42,7 @@ export function ContextPanel({ children, count, storageKey, title }: ContextPane
   };
 
   return (
-    <div className="ui-context-panel" data-collapsed={collapsed} data-storage-key={contextPanelStorageKey(storageKey)}>
+    <div className="ui-context-panel" data-collapsed={collapsed} data-mobile-always-open={mobileAlwaysOpen ? "true" : undefined} data-storage-key={contextPanelStorageKey(storageKey)}>
       <header className="ui-context-panel__header">
         <div className="ui-context-panel__heading">
           <h2>{title}</h2>
