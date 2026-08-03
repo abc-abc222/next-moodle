@@ -45,7 +45,7 @@
     "@types/react-dom": "^19",
     "@types/sanitize-html": "^2.16.1",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.2.12",
     "lighthouse": "^13.4.1",
     "react-doctor": "^0.9.1",
     "react-grab": "^0.1.50",
