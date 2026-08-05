@@ -39,7 +39,7 @@ export function QuizResponseEditor({ node, onChange }: Readonly<{
   const editorId = node.id === undefined ? undefined : `${node.id}-editor`;
 
   return (
-    <div className="ui-quiz-response-editor" data-editor="moodle-response">
+    <div className="ui-quiz-response-editor min-w-0" data-editor="moodle-response">
       <RichTextEditor
         ariaLabel="回答エディター"
         disabled={node.disabled}
@@ -53,7 +53,7 @@ export function QuizResponseEditor({ node, onChange }: Readonly<{
       />
       <textarea
         aria-hidden="true"
-        className="ui-quiz-response-editor__wire"
+        className="ui-quiz-response-editor__wire sr-only"
         defaultValue={node.value}
         disabled={node.disabled}
         maxLength={node.maxLength}

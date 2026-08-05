@@ -3,7 +3,7 @@
 import { ArrowRight, Bell, Check } from "@phosphor-icons/react";
 import Link from "next/link";
 
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, Card, EmptyState as UiEmptyState } from "@/components/ui";
 import type { AppRuntimeConfig } from "@/lib/app-config";
 import { dateTimeFormatter } from "@/lib/date-time";
 import {
@@ -13,8 +13,6 @@ import {
   type NotificationsData,
 } from "@/lib/moodle/queries/notifications-schema";
 import type { MoodleNotificationId } from "@/lib/moodle/identifiers";
-
-import styles from "./notifications.module.css";
 
 type NotificationListProps = Readonly<{
   data: NotificationsData;
@@ -26,16 +24,11 @@ type NotificationListProps = Readonly<{
 
 function EmptyState({ filter }: Readonly<{ filter: NotificationFilter }>) {
   return (
-    <div className={styles.empty} role="status">
-      <h2 className={styles.emptyTitle}>
-        {filter === "unread" ? "未読の通知はありません" : "通知はまだありません"}
-      </h2>
-      <p className={styles.emptyBody}>
-        {filter === "unread"
-          ? "この画面を開いている間、新しい通知を60秒ごとに確認します。"
-          : "Moodleから通知が届くと、ここに時系列で表示されます。"}
-      </p>
-    </div>
+    <UiEmptyState icon={<Bell aria-hidden size={22} />} title={filter === "unread" ? "未読の通知はありません" : "通知はまだありません"}>
+      {filter === "unread"
+        ? "この画面を開いている間、新しい通知を60秒ごとに確認します。"
+        : "Moodleから通知が届くと、ここに時系列で表示されます。"}
+    </UiEmptyState>
   );
 }
 
@@ -52,12 +45,13 @@ function NotificationItem({
 }>) {
   const isPending = pendingId === notification.id;
   return (
-    <li className={styles.item} data-unread={!notification.read}>
-      <div className={styles.itemHeader}>
-        <div className={styles.itemHeading}>
-          <h2 className={styles.subject}>{notification.subject}</h2>
+    <li className="relative grid gap-4 rounded-[var(--shape-card)] bg-[var(--surface-primary)] p-4 transition-colors duration-[120ms] hover:bg-[var(--surface-elevated)] data-[unread=true]:bg-[var(--surface-selected)] sm:p-5" data-unread={!notification.read}>
+      {!notification.read ? <span aria-hidden className="absolute inset-y-4 left-0 w-[3px] rounded-r bg-[var(--accent-500)]" /> : null}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="grid min-w-0 gap-1">
+          <h2 className="m-0 text-base leading-snug font-semibold text-[var(--text-primary)] text-balance">{notification.subject}</h2>
           <time
-            className={styles.meta}
+            className="text-xs text-[var(--text-tertiary)]"
             dateTime={new Date(notification.timeCreated * 1_000).toISOString()}
           >
             {timeFormatter.format(new Date(notification.timeCreated * 1_000))}
@@ -70,18 +64,18 @@ function NotificationItem({
           {notification.read ? "既読" : "未読"}
         </Badge>
       </div>
-      <p className={styles.message}>{notification.message}</p>
-      <div className={styles.itemActions}>
+      <p className="m-0 whitespace-pre-wrap text-sm leading-6 text-[var(--text-secondary)]">{notification.message}</p>
+      <div className="flex flex-wrap items-center gap-2">
         {notification.href ? (
           <Link
-            className={styles.activity}
+            className="inline-flex min-h-11 items-center gap-2 rounded-[var(--shape-control)] px-3 text-xs font-semibold text-[var(--text-primary)] no-underline transition-colors duration-[120ms] hover:bg-[var(--surface-inset)]"
             href={notification.href}
           >
             <ArrowRight aria-hidden size={18} weight="bold" />
             関連する活動を開く
           </Link>
         ) : (
-          <span className={styles.fallback}>関連する活動へのリンクはありません。</span>
+          <span className="text-xs text-[var(--text-tertiary)]">関連する活動へのリンクはありません。</span>
         )}
         {!notification.read ? (
           <Button
@@ -117,8 +111,8 @@ export function NotificationList({
     return <EmptyState filter={filter} />;
   }
   return (
-    <div className={styles.inbox}>
-      <ul className={styles.list} aria-label="Moodleの通知">
+    <Card className="ui-notifications-inbox" padding="compact" tone="default">
+      <ul className="m-0 grid list-none gap-2 p-0" aria-label="Moodleの通知">
         {visibleNotifications.map((notification) => (
           <NotificationItem
             key={notification.id}
@@ -129,6 +123,6 @@ export function NotificationList({
           />
         ))}
       </ul>
-    </div>
+    </Card>
   );
 }

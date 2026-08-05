@@ -7,12 +7,11 @@ import {
 
 import { TransitionLink } from "@/components/app-shell/transitions";
 import { PageFrame, RouteHeader } from "@/components/app-shell/workspace-frame";
-import { Badge, Notice } from "@/components/ui";
+import { Badge, Card, EmptyState } from "@/components/ui";
 import { calendarDate, dateTimeFormatter } from "@/lib/date-time";
 import type { AppRuntimeConfig } from "@/lib/app-config";
 import type { CalendarPageData } from "@/lib/moodle/queries/calendar";
 import { moveMonth, type MonthCursor } from "@/lib/moodle/queries/calendar-model";
-import "./calendar.css";
 import { CalendarExportButton } from "./calendar-export-button";
 import { CalendarEventCreator, CalendarEventDelete } from "./calendar-event-actions";
 
@@ -24,13 +23,14 @@ function monthHref(cursor: MonthCursor): string {
 
 function CalendarTabs({ data }: Readonly<{ data: CalendarPageData }>) {
   return (
-    <nav aria-label="カレンダー表示" className="ui-calendar-tabs">
-      <TransitionLink aria-current={data.view === "agenda" ? "page" : undefined} href="/calendar" intent="switch">
+    <nav aria-label="カレンダー表示" className="ui-calendar-tabs inline-flex min-h-11 items-center gap-1 rounded-[var(--shape-control)] bg-[var(--surface-inset)] p-1">
+      <TransitionLink aria-current={data.view === "agenda" ? "page" : undefined} className="inline-flex min-h-9 items-center gap-2 rounded-[calc(var(--shape-control)-.125rem)] px-3 text-xs font-semibold text-[var(--text-secondary)] no-underline transition-colors duration-[120ms] aria-[current=page]:bg-[var(--surface-elevated)] aria-[current=page]:text-[var(--text-primary)] aria-[current=page]:shadow-[var(--shadow-control)]" href="/calendar" intent="switch">
         <ListBullets aria-hidden size={18} weight="regular" />
         予定一覧
       </TransitionLink>
       <TransitionLink
         aria-current={data.view === "month" ? "page" : undefined}
+        className="inline-flex min-h-9 items-center gap-2 rounded-[calc(var(--shape-control)-.125rem)] px-3 text-xs font-semibold text-[var(--text-secondary)] no-underline transition-colors duration-[120ms] aria-[current=page]:bg-[var(--surface-elevated)] aria-[current=page]:text-[var(--text-primary)] aria-[current=page]:shadow-[var(--shadow-control)]"
         href={monthHref(data.cursor)}
         intent="switch"
       >
@@ -48,29 +48,27 @@ function AgendaView({ data, dateFormat, timeFormat }: Readonly<{
 }>) {
   if (data.groups.length === 0) {
     return (
-      <Notice title="今後の予定はありません" tone="success">
-        <p>Moodleに新しい予定が追加されると、ここに表示されます。</p>
-      </Notice>
+      <EmptyState icon={<CalendarBlank aria-hidden size={22} />} title="今後の予定はありません">Moodleに新しい予定が追加されると、ここに表示されます。</EmptyState>
     );
   }
   return (
-    <div className="ui-calendar-agenda">
+    <div className="ui-calendar-agenda grid gap-6">
       {data.groups.map((group) => (
-        <section key={group.dateKey}>
-          <h2><time dateTime={group.dateKey}>{dateFormat.format(calendarDate(group.dateKey))}</time></h2>
-          <ul>
+        <Card key={group.dateKey} padding="standard" tone="default">
+          <h2 className="m-0 min-h-11 text-lg font-semibold"><time dateTime={group.dateKey}>{dateFormat.format(calendarDate(group.dateKey))}</time></h2>
+          <ul className="m-0 list-none divide-y divide-[var(--border-subtle)] p-0">
             {group.events.map((event) => (
-              <li key={event.id}>
-                <time dateTime={new Date(event.startsAt * 1_000).toISOString()}>
+              <li className="grid min-h-16 grid-cols-[5rem_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[var(--shape-control)] px-2 transition-colors duration-[120ms] hover:bg-[var(--surface-elevated)] max-sm:grid-cols-[4rem_minmax(0,1fr)_auto]" key={event.id}>
+                <time className="font-mono text-xs text-[var(--text-secondary)]" dateTime={new Date(event.startsAt * 1_000).toISOString()}>
                   {timeFormat.format(new Date(event.startsAt * 1_000))}
                 </time>
-                <strong>{event.name}</strong>
+                <strong className="min-w-0 break-words">{event.name}</strong>
                 {event.status === "late" ? <Badge tone="error">期限超過</Badge> : <Badge tone="info">予定</Badge>}
                 {event.editable ? <CalendarEventDelete eventId={event.id} /> : null}
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       ))}
     </div>
   );
@@ -87,39 +85,38 @@ function MonthView({ data, monthFormat, timeFormat }: Readonly<{
   const hasEvents = data.cells.some((cell) => cell.events.length > 0);
 
   return (
-    <div className="ui-calendar-month">
-      <div className="ui-calendar-month__toolbar">
+    <div className="ui-calendar-month grid min-w-0 gap-4">
+      <div className="ui-calendar-month__toolbar flex items-center justify-center gap-3">
         <TransitionLink aria-label="前の月" className="ui-app-action-link" href={monthHref(previous)} intent="switch">
           <CaretLeft aria-hidden size={18} weight="regular" />
         </TransitionLink>
-        <h2>{monthFormat.format(monthDate)}</h2>
+        <h2 className="m-0 min-w-36 text-center text-lg font-semibold">{monthFormat.format(monthDate)}</h2>
         <TransitionLink aria-label="次の月" className="ui-app-action-link" href={monthHref(next)} intent="switch">
           <CaretRight aria-hidden size={18} weight="regular" />
         </TransitionLink>
       </div>
       {!hasEvents ? (
-        <Notice title="この月の予定はありません" tone="info">
-          <p>前後の月へ移動するか、予定一覧を確認してください。</p>
-        </Notice>
+        <EmptyState title="この月の予定はありません">前後の月へ移動するか、予定一覧を確認してください。</EmptyState>
       ) : null}
-      <div className="ui-calendar-month__weekdays" aria-hidden="true">
-        {WEEKDAYS.map((weekday) => <span key={weekday}>{weekday}</span>)}
-      </div>
-      <ol aria-label={`${data.cursor.year}年${data.cursor.month}月`} className="ui-calendar-month__grid">
-        {data.cells.map((cell) => (
+      <div className="overflow-x-auto rounded-[var(--shape-card)]" role="region" aria-label="月間カレンダー">
+        <div className="ui-calendar-month__weekdays grid min-w-[42rem] grid-cols-7 gap-1 pb-2 text-center text-xs font-semibold text-[var(--text-tertiary)]" aria-hidden="true">
+          {WEEKDAYS.map((weekday) => <span key={weekday}>{weekday}</span>)}
+        </div>
+        <ol aria-label={`${data.cursor.year}年${data.cursor.month}月`} className="ui-calendar-month__grid m-0 grid min-w-[42rem] grid-cols-7 gap-1 overflow-hidden p-0">
+          {data.cells.map((cell) => (
           <li
             aria-hidden={cell.day === null}
-            className={cell.day === null ? "ui-calendar-day ui-calendar-day--placeholder" : "ui-calendar-day"}
+            className={cell.day === null ? "ui-calendar-day ui-calendar-day--placeholder min-h-28 rounded-[var(--shape-control)] bg-[var(--surface-inset)] opacity-35" : "ui-calendar-day min-h-28 rounded-[var(--shape-control)] bg-[var(--surface-inset)] p-2"}
             key={cell.key}
           >
             {cell.day === null || cell.dateKey === null ? null : (
               <>
-                <time dateTime={cell.dateKey}>{cell.day}</time>
-                <ul>
+                <time className="font-mono text-xs text-[var(--text-secondary)]" dateTime={cell.dateKey}>{cell.day}</time>
+                <ul className="m-0 mt-2 grid list-none gap-1 p-0">
                   {cell.events.map((event) => (
-                    <li key={event.id}>
-                      <strong>{event.name}</strong>
-                      <span>{timeFormat.format(new Date(event.startsAt * 1_000))}</span>
+                    <li className="grid gap-0.5 rounded-md bg-[var(--surface-elevated)] p-2" key={event.id}>
+                      <strong className="line-clamp-2 text-xs">{event.name}</strong>
+                      <span className="text-[.6875rem] text-[var(--text-tertiary)]">{timeFormat.format(new Date(event.startsAt * 1_000))}</span>
                       {event.status === "late" ? <Badge tone="error">期限超過</Badge> : null}
                     </li>
                   ))}
@@ -127,8 +124,9 @@ function MonthView({ data, monthFormat, timeFormat }: Readonly<{
               </>
             )}
           </li>
-        ))}
-      </ol>
+          ))}
+        </ol>
+      </div>
     </div>
   );
 }
@@ -158,7 +156,7 @@ export function CalendarView({ canManage, config, data }: Readonly<{
         <MonthView data={data} monthFormat={monthFormat} timeFormat={timeFormat} />
       )}
       header={<RouteHeader
-        actions={<div className="ui-calendar-header__actions">
+        actions={<div className="ui-calendar-header__actions flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
           {canManage ? <CalendarEventCreator /> : null}
           <CalendarExportButton events={exportEvents} />
           <CalendarTabs data={data} />
@@ -168,6 +166,7 @@ export function CalendarView({ canManage, config, data }: Readonly<{
         title="カレンダー"
       />}
       mode="overview"
+      width="wide"
     />
   );
 }

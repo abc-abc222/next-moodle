@@ -6,7 +6,6 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { Button, IconButton, ThemeControl } from "@/components/ui";
 import { ShowcaseSample, ShowcaseSection } from "./showcase-frame";
-import styles from "./showcase.module.css";
 
 export function ActionShowcase() {
   return (
@@ -15,17 +14,17 @@ export function ActionShowcase() {
       eyebrow="01 / Interaction"
       title="Actions and theme"
     >
-      <div className={styles.themeRow}>
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[var(--shape-card)] bg-[var(--surface-primary)] p-4 sm:p-6">
         <div>
-          <h3 className={styles.groupTitle}>Theme preference</h3>
-          <p className={styles.groupDescription}>
+          <h3 className="m-0 text-lg font-semibold">Theme preference</h3>
+          <p className="m-0 mt-1 text-sm text-[var(--text-secondary)]">
             Dark is the default; explicit light and system choices persist without a paint flash.
           </p>
         </div>
         <ThemeControl />
       </div>
 
-      <div className={styles.sampleGrid}>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <ShowcaseSample label="Default">
           <Button icon={<FloppyDisk aria-hidden size={17} weight="regular" />} variant="primary">
             Save changes

@@ -51,7 +51,7 @@ function SessionEndButton({
   };
 
   return (
-    <div className="ui-app-logout">
+    <div className="ui-app-logout grid gap-1.5">
       <Button
         icon={<SignOut aria-hidden size={18} weight="regular" />}
         loading={pending}
@@ -60,7 +60,7 @@ function SessionEndButton({
       >
         {label}
       </Button>
-      <span aria-live="polite" className="ui-app-logout__status">
+      <span aria-live="polite" className="ui-app-logout__status min-h-4 text-xs text-[var(--status-error)]">
         {failed ? errorMessage : ""}
       </span>
     </div>

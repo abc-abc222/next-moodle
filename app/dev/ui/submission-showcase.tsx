@@ -8,7 +8,6 @@ import { SubmissionFileQueue } from "@/components/assignments/submission-file-qu
 import { WritingWorkspace } from "@/components/assignments/writing-workspace";
 import { Button, Textarea } from "@/components/ui";
 import { ShowcaseSection, ShowcaseSample } from "./showcase-frame";
-import styles from "./showcase.module.css";
 
 export function SubmissionShowcase() {
   const [text, setText] = useState("<p>フィールドノートの要約です。</p>");
@@ -31,7 +30,7 @@ export function SubmissionShowcase() {
       eyebrow="04 / Submission"
       title="Submission primitives"
     >
-      <div className={styles.surfaceGrid}>
+      <div className="grid gap-3 md:grid-cols-2">
         <ShowcaseSample label="Textarea">
           <Textarea defaultValue="Markdownやプレーンテキストを形式のまま編集します。" label="本文" />
         </ShowcaseSample>
@@ -56,9 +55,9 @@ export function SubmissionShowcase() {
         onImagesToPdf={() => undefined} onMove={() => undefined}
         onRemoveExisting={() => undefined} onRemoveNew={(index) => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
       />
-      <div className={styles.surfaceGrid}>
-        <ShowcaseSample label="Progress"><progress max={100} value={64}>64%</progress></ShowcaseSample>
-        <ShowcaseSample label="Confirmation"><p>本文あり · ファイル1件。この内容で提出を確定しますか？</p><Button variant="primary">提出を確定</Button></ShowcaseSample>
+      <div className="grid gap-3 md:grid-cols-3">
+        <ShowcaseSample label="Progress"><progress className="w-full accent-[var(--accent-500)]" max={100} value={64}>64%</progress></ShowcaseSample>
+        <ShowcaseSample label="Confirmation"><p className="m-0 mb-3 text-sm leading-6 text-[var(--text-secondary)]">本文あり · ファイル1件。この内容で提出を確定しますか？</p><Button variant="primary">提出を確定</Button></ShowcaseSample>
         <ShowcaseSample label="PDF thumbnail">{preview === null ? "生成中…" : <PdfThumbnail bytes={preview} pageIndex={0} />}</ShowcaseSample>
       </div>
     </ShowcaseSection>

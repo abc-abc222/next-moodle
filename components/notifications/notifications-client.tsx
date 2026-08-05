@@ -4,6 +4,7 @@ import { WarningCircle } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button, Notice } from "@/components/ui";
+import { PageFrame, RouteHeader } from "@/components/app-shell/workspace-frame";
 import type { AppRuntimeConfig } from "@/lib/app-config";
 import {
   NotificationsApiSuccessSchema,
@@ -16,7 +17,6 @@ import type { MoodleNotificationId } from "@/lib/moodle/identifiers";
 import { createNotificationPoller } from "./polling";
 import { NotificationList } from "./notification-list";
 import { NotificationStatusNotice } from "./status-notice";
-import styles from "./notifications.module.css";
 
 type NotificationsClientProps = Readonly<{
   initialState: NotificationsPageState;
@@ -179,68 +179,65 @@ export function NotificationsClient({
   };
 
   return (
-    <section className={styles.page} aria-labelledby="notifications-title">
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title} id="notifications-title">
-            通知
-          </h1>
-          <p className={styles.description}>
-            フィードバックやお知らせを、未読順の受信箱で確認します。
-          </p>
+    <PageFrame
+      content={<section className="grid min-w-0 gap-5" aria-label="通知一覧">
+        {pollError ? (
+          <Notice tone="warning" title="自動更新を一時停止しました">
+            Moodleから応答がありませんでした。現在の一覧はそのまま確認できます。
+          </Notice>
+        ) : null}
+        {readError ? (
+          <Notice tone="error" title="既読にできませんでした">
+            入力内容は失われていません。Moodleへ接続できる状態で、もう一度お試しください。
+          </Notice>
+        ) : null}
+        <div aria-live="polite" className="flex min-h-6 items-center gap-2 text-xs text-[var(--text-tertiary)]">
+          <WarningCircle aria-hidden size={15} weight="regular" /> この画面を表示中だけ、60秒ごとに更新します。
         </div>
-        <div className={styles.controls}>
-          <div className={styles.filterGroup} role="group" aria-label="通知の絞り込み">
+        {pageState.kind === "ready" ? (
+          <NotificationList
+            data={pageState.data}
+            filter={filter}
+            onMarkRead={(id) => void markRead(id)}
+            pendingId={pendingId}
+            runtimeConfig={runtimeConfig}
+          />
+        ) : (
+          <NotificationStatusNotice kind={pageState.kind} />
+        )}
+      </section>}
+      header={<RouteHeader
+        actions={<div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-[var(--shape-control)] bg-[var(--surface-inset)] p-1" role="group" aria-label="通知の絞り込み">
             <Button
               aria-pressed={filter === "unread"}
-              className={styles.filterButton}
-              data-selected={filter === "unread"}
               onClick={() => setFilter("unread")}
-              variant="ghost"
+              size="compact"
+              variant={filter === "unread" ? "secondary" : "ghost"}
             >
               未読
             </Button>
             <Button
               aria-pressed={filter === "all"}
-              className={styles.filterButton}
-              data-selected={filter === "all"}
               onClick={() => setFilter("all")}
-              variant="ghost"
+              size="compact"
+              variant={filter === "all" ? "secondary" : "ghost"}
             >
               すべて
             </Button>
           </div>
           {pageState.kind === "ready" ? (
-            <span className={styles.count} aria-live="polite">
+            <span className="tabular-nums text-xs text-[var(--text-tertiary)]" aria-live="polite">
               未読 {pageState.data.unreadCount}件
             </span>
           ) : null}
-        </div>
-      </header>
-      {pollError ? (
-        <Notice tone="warning" title="自動更新を一時停止しました">
-          Moodleから応答がありませんでした。現在の一覧はそのまま確認できます。
-        </Notice>
-      ) : null}
-      {readError ? (
-        <Notice tone="error" title="既読にできませんでした">
-          入力内容は失われていません。Moodleへ接続できる状態で、もう一度お試しください。
-        </Notice>
-      ) : null}
-      <div aria-live="polite" className={styles.pollStatus}>
-        <WarningCircle aria-hidden size={15} weight="regular" /> この画面を表示中だけ、60秒ごとに更新します。
-      </div>
-      {pageState.kind === "ready" ? (
-        <NotificationList
-          data={pageState.data}
-          filter={filter}
-          onMarkRead={(id) => void markRead(id)}
-          pendingId={pendingId}
-          runtimeConfig={runtimeConfig}
-        />
-      ) : (
-        <NotificationStatusNotice kind={pageState.kind} />
-      )}
-    </section>
+        </div>}
+        description="フィードバックやお知らせを、未読順の受信箱で確認します。"
+        eyebrow="INBOX"
+        title="通知"
+      />}
+      mode="overview"
+      width="standard"
+    />
   );
 }

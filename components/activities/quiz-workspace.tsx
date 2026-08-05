@@ -5,7 +5,7 @@ import ky from "ky";
 import { useRouter } from "next/navigation";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 
-import { Button, Notice, RichContent } from "@/components/ui";
+import { Button, Card, DataList, DataListItem, Notice, RichContent, StickyActionBar } from "@/components/ui";
 import type { QuizActivityData, QuizQuestion } from "@/lib/moodle/activities/quiz";
 
 type SaveState = "idle" | "saving" | "saved" | "forbidden" | "error";
@@ -180,32 +180,32 @@ export function QuizWorkspace({ cmid, data }: Readonly<{ cmid: number; data: Qui
   if (data.activeAttempt === null) {
     const attemptsRemaining = data.maxAttempts === 0 || data.attempts.length < data.maxAttempts;
     return (
-      <section className="ui-quiz-start" aria-labelledby="quiz-start-title">
-        <div><span className="ui-kicker">Assessment</span><h2 id="quiz-start-title">小テストを開始</h2><p>開始後は回答が自動保存されます。提出前に確認できます。</p></div>
-        <dl><div><dt>受験回数</dt><dd>{data.attempts.length}{data.maxAttempts === 0 ? " / 無制限" : ` / ${data.maxAttempts}`}</dd></div><div><dt>制限時間</dt><dd>{data.timeLimit === 0 ? "なし" : `${Math.ceil(data.timeLimit / 60)}分`}</dd></div></dl>
+      <section className="ui-quiz-start grid gap-5 rounded-[var(--shape-card)] bg-[var(--surface-primary)] p-4 sm:p-6" aria-labelledby="quiz-start-title">
+        <div className="grid gap-1"><span className="ui-kicker font-mono text-xs tracking-[.08em] text-[var(--text-tertiary)]">ASSESSMENT</span><h2 className="m-0 text-xl font-semibold" id="quiz-start-title">小テストを開始</h2><p className="m-0 mt-1 text-sm leading-6 text-[var(--text-secondary)]">開始後は回答が自動保存されます。提出前に確認できます。</p></div>
+        <dl className="m-0 grid gap-3 rounded-[var(--shape-card)] bg-[var(--surface-inset)] p-4 sm:grid-cols-2"><div className="grid gap-1"><dt className="text-xs text-[var(--text-tertiary)]">受験回数</dt><dd className="m-0 tabular-nums">{data.attempts.length}{data.maxAttempts === 0 ? " / 無制限" : ` / ${data.maxAttempts}`}</dd></div><div className="grid gap-1"><dt className="text-xs text-[var(--text-tertiary)]">制限時間</dt><dd className="m-0 tabular-nums">{data.timeLimit === 0 ? "なし" : `${Math.ceil(data.timeLimit / 60)}分`}</dd></div></dl>
         {data.hasQuestions && attemptsRemaining ? <Button disabled={pendingAction !== null} icon={<Play aria-hidden size={17} />} onClick={() => void start()}>{pendingAction === "start" ? "開始中" : "受験を開始"}</Button> : <Notice title="現在は開始できません" tone="warning"><p>設問または受験回数を確認してください。</p></Notice>}
         {actionError === null ? null : <Notice title={actionError === "forbidden" ? "アクセスが禁止されています" : "小テストを開始できません"} tone={actionError === "forbidden" ? "warning" : "error"} urgent><p>{actionError === "forbidden" ? "この小テストを開始する権限がありません。" : "Moodleとの通信中に問題が発生しました。時間をおいて再試行してください。"}</p></Notice>}
-        {data.attempts.length > 0 ? <ul className="ui-quiz-attempts">{data.attempts.map((attempt) => <li key={attempt.id}><span>第{attempt.attempt}回</span><strong>{attemptLabel(attempt.state)}</strong>{attempt.sumgrades == null ? null : <span>{attempt.sumgrades}点</span>}</li>)}</ul> : null}
+        {data.attempts.length > 0 ? <DataList className="ui-quiz-attempts" label="受験履歴">{data.attempts.map((attempt) => <DataListItem key={attempt.id} state={attempt.sumgrades == null ? undefined : <span className="text-sm tabular-nums">{attempt.sumgrades}点</span>} title={`第${attempt.attempt}回`} description={attemptLabel(attempt.state)} />)}</DataList> : null}
       </section>
     );
   }
 
   const active = data.activeAttempt;
   return (
-    <form className="ui-quiz-attempt" onClick={clearQuestionResponse} onInput={scheduleSave} onSubmit={(event) => event.preventDefault()} ref={formRef}>
-      <header className="ui-quiz-attempt__header"><div><span className="ui-kicker">第 {active.attempt.attempt} 回の受験</span><h2>回答ページ {active.page + 1}</h2></div><div className="ui-quiz-attempt__summary"><span className="ui-quiz-page-count">このページ: {active.questions.length}問</span><span className={`ui-quiz-save ui-quiz-save--${saveState}`} aria-live="polite">{saveState === "saving" ? <SpinnerGap aria-hidden className="ui-spin" size={15} /> : saveState === "saved" ? <CheckCircle aria-hidden size={15} /> : saveState === "forbidden" || saveState === "error" ? <WarningCircle aria-hidden size={15} /> : null}{saveStateLabel(saveState)}</span></div></header>
+    <form className="ui-quiz-attempt grid gap-5 pb-24" onClick={clearQuestionResponse} onInput={scheduleSave} onSubmit={(event) => event.preventDefault()} ref={formRef}>
+      <header className="ui-quiz-attempt__header flex flex-wrap items-end justify-between gap-4"><div className="grid gap-1"><span className="ui-kicker font-mono text-xs tracking-[.08em] text-[var(--text-tertiary)]">第 {active.attempt.attempt} 回の受験</span><h2 className="m-0 text-xl font-semibold">回答ページ {active.page + 1}</h2></div><div className="ui-quiz-attempt__summary flex flex-wrap items-center justify-end gap-3"><span className="ui-quiz-page-count text-xs text-[var(--text-tertiary)]">このページ: {active.questions.length}問</span><span className={`ui-quiz-save ui-quiz-save--${saveState} inline-flex min-h-7 items-center gap-1.5 text-xs ${saveState === "saved" ? "text-[var(--status-success)]" : saveState === "forbidden" || saveState === "error" ? "text-[var(--status-error)]" : "text-[var(--text-tertiary)]"}`} aria-live="polite">{saveState === "saving" ? <SpinnerGap aria-hidden className="animate-spin" size={15} /> : saveState === "saved" ? <CheckCircle aria-hidden size={15} /> : saveState === "forbidden" || saveState === "error" ? <WarningCircle aria-hidden size={15} /> : null}{saveStateLabel(saveState)}</span></div></header>
       {active.messages.map((message) => <Notice key={message} title="受験条件" tone="warning"><p>{message}</p></Notice>)}
       {saveState === "forbidden" ? <Notice title="アクセスが禁止されています" tone="warning" urgent><p>この回答を保存する権限がありません。受講条件を確認してください。</p></Notice> : null}
       {saveState === "error" ? <Notice action={<Button onClick={() => void save()} size="compact" variant="secondary">再試行</Button>} title="回答を保存できません" tone="error" urgent><p>入力はこの画面に残っています。通信を確認して再試行してください。</p></Notice> : null}
       {actionError === null ? null : <Notice title={actionError === "forbidden" ? "アクセスが禁止されています" : "回答を提出できません"} tone={actionError === "forbidden" ? "warning" : "error"} urgent><p>{actionError === "forbidden" ? "この小テストを更新する権限がありません。" : "Moodleとの通信中に問題が発生しました。入力は保持されています。"}</p></Notice>}
-      <div className="ui-quiz-questions">
-        {active.questions.map((question) => <article className="ui-quiz-question" key={question.slot}><header className="ui-quiz-question__meta"><h3>問題 {question.slot}</h3><div><span>{questionStatus(question)}</span>{question.maximumMark === null ? null : <small>{question.maximumMark}</small>}</div></header><RichContent className="ui-quiz-question__body" document={question.document} onInput={scheduleSave} variant="quiz" /></article>)}
+      <div className="ui-quiz-questions grid gap-5">
+        {active.questions.map((question) => <Card className="ui-quiz-question overflow-hidden" padding="none" key={question.slot} tone="elevated"><header className="ui-quiz-question__meta flex min-h-12 flex-wrap items-center justify-between gap-3 bg-[var(--surface-inset)] px-4 py-2"><h3 className="m-0 text-sm font-semibold">問題 {question.slot}</h3><div className="flex flex-wrap items-center justify-end gap-2"><span className="rounded-full bg-[var(--surface-elevated)] px-2 py-0.5 text-xs text-[var(--text-secondary)]">{questionStatus(question)}</span>{question.maximumMark === null ? null : <small className="text-xs tabular-nums text-[var(--text-tertiary)]">{question.maximumMark}</small>}</div></header><RichContent className="ui-quiz-question__body p-4 sm:p-6" document={question.document} onInput={scheduleSave} variant="quiz" /></Card>)}
       </div>
-      <footer className="ui-quiz-actions">
+      <StickyActionBar aria-label="小テスト操作" className="ui-quiz-actions justify-between">
         <Button disabled={active.page === 0 || pendingAction !== null} onClick={() => void move(active.page - 1)} type="button" variant="secondary"><ArrowLeft aria-hidden size={17} />前へ</Button>
-        <span>{saveState === "saved" ? "回答は保存されています" : "変更は1秒後に自動保存されます"}</span>
+        <span className="text-center text-xs text-[var(--text-tertiary)] max-sm:hidden">{saveState === "saved" ? "回答は保存されています" : "変更は1秒後に自動保存されます"}</span>
         {active.nextPage >= 0 ? <Button disabled={pendingAction !== null} onClick={() => void move(active.nextPage)} type="button">次へ<ArrowRight aria-hidden size={17} /></Button> : <Button disabled={pendingAction !== null} onClick={() => void finish()} type="button">{pendingAction === "finish" ? "提出中" : "回答を提出"}</Button>}
-      </footer>
+      </StickyActionBar>
     </form>
   );
 }

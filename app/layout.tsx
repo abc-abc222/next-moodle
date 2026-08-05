@@ -3,7 +3,7 @@ import Script from "next/script";
 import type { ReactNode } from "react";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
-import { ThemeProvider } from "@/components/ui";
+import { AppMotionProvider, ThemeProvider } from "@/components/ui";
 import { readAppRuntimeConfig } from "@/lib/app-config";
 import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import "./globals.css";
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {THEME_BOOTSTRAP_SCRIPT}
         </Script>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider><AppMotionProvider>{children}</AppMotionProvider></ThemeProvider>
       </body>
     </html>
   );

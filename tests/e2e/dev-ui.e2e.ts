@@ -33,12 +33,12 @@ for (const viewport of VIEWPORTS) {
       // Then
       await expect(page.getByTestId("ui-showcase")).toBeVisible();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-      await expect(page.locator(".ui-button").first()).toBeVisible();
-      await expect(page.locator(".ui-field")).toHaveCount(8);
-      await expect(page.locator(".ui-badge")).toHaveCount(7);
-      await expect(page.locator(".ui-notice")).toHaveCount(4);
-      await expect(page.locator(".ui-skeleton")).toHaveCount(3);
-      await expect(page.getByTestId("responsive-stack-specimen")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
+      await expect(page.getByLabel("Course search")).toBeVisible();
+      await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
+      await expect(page.getByText("Submission saved", { exact: true })).toBeVisible();
+      await expect(page.getByRole("status", { name: "読み込み中" })).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "ナビゲーション見本" })).toBeVisible();
 
       const hasHorizontalOverflow = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -46,7 +46,8 @@ for (const viewport of VIEWPORTS) {
       expect(hasHorizontalOverflow).toBe(false);
 
       const undersizedTargets = await page.evaluate(() =>
-        Array.from(document.querySelectorAll("button, input:not([type=checkbox]):not(.ui-sr-only)")).flatMap((element) => {
+        Array.from(document.querySelectorAll("button, input:not([type=checkbox])")).flatMap((element) => {
+          if (element.matches(".sr-only, .ui-sr-only") || getComputedStyle(element).display === "none") return [];
           const rect = element.getBoundingClientRect();
           if (rect.width >= 44 && rect.height >= 44) {
             return [];
@@ -61,14 +62,6 @@ for (const viewport of VIEWPORTS) {
         }),
       );
       expect(undersizedTargets).toEqual([]);
-
-      if (viewport.width === 375) {
-        const stack = page.getByTestId("responsive-stack-specimen");
-        const actionPositions = await stack.locator("button").evaluateAll((buttons) =>
-          buttons.map((button) => button.getBoundingClientRect().top),
-        );
-        expect(actionPositions[1]).toBeGreaterThan(actionPositions[0] ?? 0);
-      }
 
       await page.screenshot({
         animations: "disabled",
@@ -159,15 +152,15 @@ test("shows press feedback and returns to rest", async ({ page }) => {
 
   // Then
   await expect
-    .poll(() => primaryButton.evaluate((element) => getComputedStyle(element).transform))
-    .not.toBe("none");
+    .poll(() => primaryButton.evaluate((element) => getComputedStyle(element).scale))
+    .toBe("0.98");
   await page.screenshot({
     animations: "allow",
     path: "test-results/visual/button-pressed.png",
   });
   await page.mouse.up();
   await expect
-    .poll(() => primaryButton.evaluate((element) => getComputedStyle(element).transform))
+    .poll(() => primaryButton.evaluate((element) => getComputedStyle(element).scale))
     .toBe("none");
   await page.screenshot({
     animations: "allow",

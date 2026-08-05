@@ -59,7 +59,7 @@ export function RichTextEditor(props: RichTextEditorProps) {
     editor.commands.setContent(props.initialContent, { emitUpdate: false });
   }, [editor, props.initialContent]);
 
-  if (editor === null) return <div className="ui-editor ui-editor--loading">エディターを読み込み中…</div>;
+  if (editor === null) return <div className="ui-editor ui-editor--loading grid min-h-64 place-items-center rounded-[var(--shape-card)] bg-[var(--surface-inset)] text-sm text-[var(--text-secondary)]">エディターを読み込み中…</div>;
 
   const setLink = () => {
     const current = editor.getAttributes("link")["href"];
@@ -80,15 +80,15 @@ export function RichTextEditor(props: RichTextEditorProps) {
   ] as const;
 
   return (
-    <div className="ui-editor" data-disabled={props.disabled}>
-      <div aria-label="文章編集ツール" className="ui-editor__toolbar" role="toolbar">
+    <div className="ui-editor overflow-hidden rounded-[var(--shape-card)] bg-[var(--surface-elevated)] shadow-[var(--shadow-control)] transition-shadow duration-[120ms] focus-within:shadow-[var(--shadow-focus)]" data-disabled={props.disabled}>
+      <div aria-label="文章編集ツール" className="ui-editor__toolbar flex min-h-14 flex-wrap items-center gap-1 bg-[var(--surface-inset)] p-2" role="toolbar">
         {tools.map(({ active, icon: Icon, label, run }) => (
-          <button aria-label={label} aria-pressed={active} disabled={props.disabled} key={label} onClick={run} type="button">
+          <button aria-label={label} aria-pressed={active} className="grid size-11 shrink-0 place-items-center rounded-[var(--shape-control)] border-0 bg-transparent text-[var(--text-secondary)] transition-colors duration-[120ms] hover:bg-[var(--surface-elevated)] hover:text-[var(--text-primary)] aria-pressed:bg-[var(--surface-selected)] aria-pressed:text-[var(--accent-400)] disabled:opacity-45" disabled={props.disabled} key={label} onClick={run} type="button">
             <Icon aria-hidden size={18} weight="regular" />
           </button>
         ))}
       </div>
-      <EditorContent editor={editor} />
+      <EditorContent className="[&_.tiptap]:min-h-80 [&_.tiptap]:px-5 [&_.tiptap]:py-6 [&_.tiptap]:text-base [&_.tiptap]:leading-8 [&_.tiptap]:text-[var(--text-primary)] [&_.tiptap]:outline-none sm:[&_.tiptap]:min-h-[24rem] sm:[&_.tiptap]:px-8 sm:[&_.tiptap]:py-7 [&_.tiptap_h2]:mt-6 [&_.tiptap_h2]:mb-3 [&_.tiptap_h2]:text-xl [&_.tiptap_p]:my-3 [&_.tiptap_blockquote]:border-l-2 [&_.tiptap_blockquote]:border-[var(--accent-500)] [&_.tiptap_blockquote]:pl-4" editor={editor} />
     </div>
   );
 }

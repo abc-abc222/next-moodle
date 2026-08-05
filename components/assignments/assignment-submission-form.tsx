@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
-import { Button, Notice, Surface } from "@/components/ui";
+import { Button, Notice, StickyActionBar, Surface } from "@/components/ui";
 import type { AiAvailability } from "@/lib/ai/config";
 import type { NativeSubmissionPolicy } from "@/lib/moodle/queries/assignment-policy";
 import type { AssignmentFile, AssignmentOnlineText } from "@/lib/moodle/queries/assignments";
@@ -187,12 +187,12 @@ export function AssignmentSubmissionForm(props: Props) {
   };
 
   return (
-    <Surface className="ui-assignment-form-surface" eyebrow="提出ワークスペース" title="提出内容を編集" variant="raised">
-      <form className="ui-assignment-form" onSubmit={(event) => event.preventDefault()}>
+    <Surface className="ui-assignment-form-surface !p-0" eyebrow="提出ワークスペース" title="提出内容を編集" variant="raised">
+      <form className="ui-assignment-form grid gap-6 p-4 sm:p-6" onSubmit={(event) => event.preventDefault()}>
         {props.policy.isGroupSubmission ? <Notice title="グループ提出" tone="info"><p>{props.policy.groupId === 0 ? "Moodleで割り当てられたグループの共同提出として保存します。" : `グループID ${props.policy.groupId} の共同提出として保存します。`}</p></Notice> : null}
         {allowsText(props.policy) ? (
-          <section className="ui-assignment-form__text">
-            <div className="ui-assignment-form__text-heading"><h3>オンラインテキスト</h3><span>{formatLabel}</span></div>
+          <section className="ui-assignment-form__text grid gap-4">
+            <div className="ui-assignment-form__text-heading flex flex-wrap items-center justify-between gap-3"><h3 className="m-0 text-base font-semibold">オンラインテキスト</h3><span className="text-xs text-[var(--text-tertiary)]">{formatLabel}</span></div>
             <WritingWorkspace
               aiAvailability={props.aiAvailability}
               aiConsentStorageKey={props.aiConsentStorageKey}
@@ -204,7 +204,7 @@ export function AssignmentSubmissionForm(props: Props) {
               submitting={pending}
               value={text}
             />
-            <small data-invalid={textTooLarge}>{textBytes.toLocaleString(props.locale)} / {props.policy.limits.maxOnlineTextBytes.toLocaleString(props.locale)} bytes · 端末内へ自動保存</small>
+            <small className="text-xs text-[var(--text-tertiary)] data-[invalid=true]:text-[var(--status-error)]" data-invalid={textTooLarge}>{textBytes.toLocaleString(props.locale)} / {props.policy.limits.maxOnlineTextBytes.toLocaleString(props.locale)} bytes · 端末内へ自動保存</small>
           </section>
         ) : null}
         {allowsFiles(props.policy) ? (
@@ -219,21 +219,21 @@ export function AssignmentSubmissionForm(props: Props) {
           />
         ) : null}
         {confirming ? (
-          <div className="ui-submit-confirmation" role="group" aria-label="提出確定の確認">
-            <CheckCircle aria-hidden size={26} weight="regular" />
-            <div><h3>この内容で提出を確定しますか？</h3><p>本文 {text.trim() === "" ? "なし" : "あり"} · ファイル {activeFileCount}件 · 締切 {props.dueLabel}</p></div>
-            {props.policy.requiresStatement ? <label className="ui-submit-statement"><input checked={statementAccepted} onChange={(event) => setStatementAccepted(event.currentTarget.checked)} type="checkbox" /><span>この提出物が自分または所属グループの成果物であることに同意します。</span></label> : null}
+          <StickyActionBar className="ui-submit-confirmation bg-[var(--surface-selected)]" role="group" aria-label="提出確定の確認">
+            <CheckCircle aria-hidden className="shrink-0 text-[var(--accent-400)]" size={26} weight="regular" />
+            <div className="mr-auto min-w-0"><h3 className="m-0 text-base font-semibold">この内容で提出を確定しますか？</h3><p className="m-0 mt-1 text-xs text-[var(--text-secondary)]">本文 {text.trim() === "" ? "なし" : "あり"} · ファイル {activeFileCount}件 · 締切 {props.dueLabel}</p></div>
+            {props.policy.requiresStatement ? <label className="ui-submit-statement flex min-h-11 basis-full items-center gap-3 text-sm text-[var(--text-primary)]"><input className="size-[18px] accent-[var(--accent-500)]" checked={statementAccepted} onChange={(event) => setStatementAccepted(event.currentTarget.checked)} type="checkbox" /><span>この提出物が自分または所属グループの成果物であることに同意します。</span></label> : null}
             <Button disabled={pending || converting} onClick={() => setConfirming(false)} type="button" variant="ghost">戻る</Button>
             <Button disabled={converting || textTooLarge || !submissionReady || (props.policy.requiresStatement && !statementAccepted)} icon={<PaperPlaneTilt aria-hidden size={18} />} loading={pending} onClick={() => void submit("finalize")} type="button" variant="primary">提出を確定</Button>
-          </div>
+          </StickyActionBar>
         ) : (
-          <div className="ui-assignment-form__actions">
+          <StickyActionBar className="ui-assignment-form__actions">
             <Button disabled={converting || textTooLarge || !submissionReady} icon={<FloppyDisk aria-hidden size={18} />} loading={pending} onClick={() => void submit("save")} type="button" variant="secondary">下書きを保存</Button>
             {props.policy.supportsFinalize ? <Button icon={<PaperPlaneTilt aria-hidden size={18} />} disabled={pending || converting || textTooLarge || !submissionReady} onClick={() => setConfirming(true)} type="button" variant="primary">提出を確定</Button> : null}
-          </div>
+          </StickyActionBar>
         )}
       </form>
-      {notice === null ? null : <Notice title={notice.tone === "success" ? "保存しました" : "保存できませんでした"} tone={notice.tone}><p>{notice.text}</p></Notice>}
+      {notice === null ? null : <div className="px-4 pb-4 sm:px-6 sm:pb-6"><Notice title={notice.tone === "success" ? "保存しました" : "保存できませんでした"} tone={notice.tone}><p>{notice.text}</p></Notice></div>}
     </Surface>
   );
 }

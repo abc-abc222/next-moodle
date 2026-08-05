@@ -25,7 +25,7 @@ export default function GlobalError({
     <html lang="ja">
       <body>
         <title>エラー · next-moodle</title>
-        <main className="ui-system-page">
+        <main className="ui-system-page grid min-h-dvh place-items-center bg-[var(--surface-canvas)] p-5 sm:p-8">
           <SystemState
             actions={<><Button icon={<ArrowClockwise aria-hidden size={17} />} onClick={retry}>もう一度試す</Button><DashboardStateLink /></>}
             description="安全な状態を保ったまま処理を停止しました。再試行しても続く場合は、問い合わせ番号を管理者へ共有してください。"

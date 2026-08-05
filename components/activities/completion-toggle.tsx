@@ -34,5 +34,5 @@ export function CompletionToggle({ cmid, complete }: Readonly<{ cmid: number; co
     router.refresh();
   }
 
-  return <div className="ui-completion-toggle"><Button disabled={status === "pending"} onClick={update} type="button" variant="secondary" icon={complete ? <Circle aria-hidden size={18} /> : <CheckCircle aria-hidden size={18} />}>{status === "pending" ? "更新中" : complete ? "未完了に戻す" : "完了にする"}</Button><span aria-live="polite">{status === "error" ? "完了状態を更新できませんでした。" : ""}</span></div>;
+  return <div className="ui-completion-toggle grid gap-2"><Button disabled={status === "pending"} loading={status === "pending"} onClick={update} type="button" variant="secondary" icon={complete ? <Circle aria-hidden size={18} /> : <CheckCircle aria-hidden size={18} />}>{complete ? "未完了に戻す" : "完了にする"}</Button><span aria-live="polite" className="min-h-5 text-xs text-[var(--status-error)]">{status === "error" ? "完了状態を更新できませんでした。" : ""}</span></div>;
 }

@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { ReactNode } from "react";
+import { classNames } from "./class-names";
 import {
   parseThemeMode,
   resolveThemeMode,
@@ -117,11 +118,14 @@ export function ThemeControl() {
   }
 
   return (
-    <div aria-label="表示テーマ" className="ui-theme-control" role="group">
+    <div aria-label="表示テーマ" className="ui-theme-control inline-grid grid-cols-3 gap-1 rounded-[var(--shape-card)] bg-[var(--surface-inset)] p-1" role="group">
       {THEME_MODES.map((themeMode) => (
         <button
           aria-pressed={context.mode === themeMode}
-          className="ui-theme-control__item"
+          className={classNames(
+            "ui-theme-control__item inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--shape-control)] border-0 bg-transparent px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-[background-color,color,transform] duration-[120ms] hover:text-[var(--text-primary)] active:scale-[.98] motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+            context.mode === themeMode && "bg-[var(--surface-elevated)] text-[var(--text-primary)] shadow-[var(--shadow-control)]",
+          )}
           key={themeMode}
           onClick={() => context.setMode(themeMode)}
           type="button"

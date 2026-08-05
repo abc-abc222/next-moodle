@@ -15,7 +15,17 @@ test("student cockpit reads the mock Moodle core routes without exposing a token
 
   await expect(page.getByRole("heading", { name: "学習ワークスペース" })).toBeVisible();
   await page.keyboard.press("Control+K");
-  await page.getByRole("dialog", { name: "画面とコースを検索" }).getByLabel("検索語").fill("knowledge check");
+  const commandDialog = page.getByRole("dialog", { name: "移動・検索" });
+  await expect(commandDialog).toBeVisible();
+  const commandGeometry = await commandDialog.locator("section").evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { bottom: rect.bottom, left: rect.left, right: rect.right, top: rect.top };
+  });
+  expect(commandGeometry.top).toBeGreaterThanOrEqual(0);
+  expect(commandGeometry.left).toBeGreaterThanOrEqual(0);
+  expect(commandGeometry.right).toBeLessThanOrEqual(1280);
+  expect(commandGeometry.bottom).toBeLessThanOrEqual(900);
+  await commandDialog.getByLabel("検索語").fill("knowledge check");
   await expect(page.getByRole("option").filter({ hasText: "Week 1 knowledge check" })).toBeVisible();
   await page.getByRole("option").filter({ hasText: "Week 1 knowledge check" }).click();
   await expect(page).toHaveURL(/\/activities\/9105/);
@@ -58,12 +68,83 @@ test("context panels persist locally and inspector sheets restore keyboard focus
   await expect(page.getByRole("button", { name: "文脈パネルを開く" })).toBeVisible();
   await page.getByRole("button", { name: "文脈パネルを開く" }).click();
 
+  const accountTrigger = page.getByRole("button", { name: "表示とアカウント設定" });
+  await accountTrigger.click();
+  const accountMenu = page.getByRole("menu", { name: "表示とアカウント設定" });
+  await expect(accountMenu).toBeVisible();
+  const accountGeometry = await accountMenu.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { bottom: rect.bottom, left: rect.left, right: rect.right, top: rect.top };
+  });
+  expect(accountGeometry.top).toBeGreaterThanOrEqual(0);
+  expect(accountGeometry.left).toBeGreaterThanOrEqual(0);
+  expect(accountGeometry.right).toBeLessThanOrEqual(1280);
+  expect(accountGeometry.bottom).toBeLessThanOrEqual(900);
+  await page.keyboard.press("Escape");
+
   const inspectorTrigger = page.getByRole("button", { name: "コース情報" });
   await inspectorTrigger.click();
   await expect(page.getByRole("dialog", { name: "コース情報" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "コース情報" })).not.toBeVisible();
   await expect(inspectorTrigger).toBeFocused();
+});
+
+test("message navigation and conversation icons keep their dimensions after a tab round trip", async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 1280 });
+  await signIn(page, "alice", "alice-password");
+  await page.goto("/messages");
+
+  const primaryNavigation = page.getByRole("navigation", { name: "主要ナビゲーション" });
+  const messageNavIcon = primaryNavigation.getByTestId("primary-nav-messages-icon");
+  const firstConversationIcon = page.getByTestId("conversation-icon").first();
+  await expect(messageNavIcon).toBeVisible();
+  await expect(firstConversationIcon).toBeVisible();
+  const before = await Promise.all([
+    messageNavIcon.evaluate((element) => ({ height: element.clientHeight, width: element.clientWidth })),
+    firstConversationIcon.evaluate((element) => ({ height: element.clientHeight, width: element.clientWidth })),
+  ]);
+
+  await primaryNavigation.getByRole("link", { name: "通知", exact: true }).click();
+  await expect(page).toHaveURL(/\/notifications$/);
+  await primaryNavigation.getByRole("link", { name: "メッセージ", exact: true }).click();
+  await expect(page).toHaveURL(/\/messages$/);
+  await expect(firstConversationIcon).toBeVisible();
+
+  const after = await Promise.all([
+    messageNavIcon.evaluate((element) => ({ height: element.clientHeight, width: element.clientWidth })),
+    firstConversationIcon.evaluate((element) => ({ height: element.clientHeight, width: element.clientWidth })),
+  ]);
+  expect(after).toEqual(before);
+
+  await page.goto("/messages/1001");
+  const conversationGeometry = await page.evaluate(() => {
+    const context = document.querySelector<HTMLElement>(".ui-page-frame__context");
+    const content = document.querySelector<HTMLElement>(".ui-page-frame__content");
+    const thread = document.querySelector<HTMLElement>(".ui-message-thread");
+    return {
+      contextWidth: context?.getBoundingClientRect().width ?? 0,
+      contentWidth: content?.getBoundingClientRect().width ?? 0,
+      threadWidth: thread?.getBoundingClientRect().width ?? 0,
+    };
+  });
+  expect(conversationGeometry.contextWidth).toBeGreaterThanOrEqual(256);
+  expect(conversationGeometry.contentWidth).toBeGreaterThan(conversationGeometry.contextWidth);
+  expect(conversationGeometry.threadWidth).toBeGreaterThan(500);
+  const scrollGeometry = await page.evaluate(() => {
+    const appMain = document.querySelector<HTMLElement>("#main-content");
+    const thread = document.querySelector<HTMLElement>(".ui-message-thread");
+    const composer = document.querySelector<HTMLElement>(".ui-message-composer");
+    return {
+      appMainClientHeight: appMain?.clientHeight ?? 0,
+      appMainScrollHeight: appMain?.scrollHeight ?? 0,
+      composerBottom: composer?.getBoundingClientRect().bottom ?? 0,
+      threadHeight: thread?.getBoundingClientRect().height ?? 0,
+    };
+  });
+  expect(scrollGeometry.appMainScrollHeight).toBeLessThanOrEqual(scrollGeometry.appMainClientHeight + 1);
+  expect(scrollGeometry.threadHeight).toBeLessThanOrEqual(scrollGeometry.appMainClientHeight);
+  expect(scrollGeometry.composerBottom).toBeLessThanOrEqual(900);
 });
 
 test("a second fixture account cannot see Alice's courses", async ({ page }) => {
@@ -152,7 +233,7 @@ test("standard activities remain inside the Editorial Native workspace", async (
 
   await page.goto("/activities/9106");
   await expect(page.locator("#forum-title")).toBeVisible();
-  await page.getByLabel("返信").fill("Record wind and cloud cover.");
+  await page.getByRole("textbox", { name: "返信", exact: true }).fill("Record wind and cloud cover.");
   await page.getByRole("button", { name: "返信を投稿" }).click();
   await expect(page.getByText("Record wind and cloud cover.")).toBeVisible();
   await page.getByRole("button", { name: "既読にする" }).click();
@@ -281,6 +362,6 @@ test("API 非対応 Questionnaire is parsed, submitted, and reported inside the 
   await page.getByLabel("メッセージ").fill("Thanks, I will be there.");
   await page.getByRole("button", { name: "送信" }).click();
   await expect(page.getByRole("main").locator(".ui-message-thread__scroll")).toContainText("Thanks, I will be there.");
-  await expect(page.getByText("Enterで改行 · ⌘ / Ctrl + Enterで送信")).toBeVisible();
+  await expect(page.getByText("⌘ / Ctrl + Enterで送信", { exact: true })).toBeVisible();
   await expect(page.getByRole("main")).toContainText("Aoi Mentor");
 });

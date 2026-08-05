@@ -7,6 +7,7 @@ import {
   sharedTransitionName,
 } from "./motion";
 import type { MotionIntent, SharedTransitionKind } from "./motion";
+import { classNames } from "@/components/ui/class-names";
 
 const ROUTE_TRANSITION_CLASSES = {
   default: "none",
@@ -22,7 +23,17 @@ type TransitionLinkProps = Omit<ComponentProps<typeof Link>, "transitionTypes"> 
 }>;
 
 export function TransitionLink({ intent, ...props }: TransitionLinkProps) {
-  return <Link {...props} transitionTypes={motionIntentToTransitionTypes(intent)} />;
+  const actionLink = typeof props.className === "string" && props.className.includes("ui-app-action-link");
+  return (
+    <Link
+      {...props}
+      className={classNames(
+        props.className,
+        actionLink && "inline-flex min-h-11 max-w-full min-w-0 items-center justify-center gap-2 rounded-[var(--shape-control)] bg-[var(--surface-elevated)] px-3 py-2 text-center text-xs font-semibold text-[var(--text-primary)] no-underline shadow-[var(--shadow-control)] transition-colors duration-[120ms] hover:bg-[var(--surface-selected)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+      )}
+      transitionTypes={motionIntentToTransitionTypes(intent)}
+    />
+  );
 }
 
 export function WorkspaceTransition({ children }: Readonly<{ children: ReactNode }>) {

@@ -7,7 +7,6 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { Badge, Field } from "@/components/ui";
 import { ShowcaseSample, ShowcaseSection } from "./showcase-frame";
-import styles from "./showcase.module.css";
 
 export function FieldShowcase() {
   return (
@@ -16,7 +15,7 @@ export function FieldShowcase() {
       eyebrow="02 / Input"
       title="Fields and status"
     >
-      <div className={styles.fieldGrid}>
+      <div className="grid gap-3 md:grid-cols-2">
         <ShowcaseSample label="Default">
           <Field id="course-search" label="Course search" placeholder="Search by title" />
         </ShowcaseSample>
@@ -61,9 +60,9 @@ export function FieldShowcase() {
         </ShowcaseSample>
       </div>
 
-      <div className={styles.badgeBlock}>
-        <h3 className={styles.groupTitle}>Semantic badges</h3>
-        <div className={styles.badgeRow}>
+      <div className="grid gap-3 rounded-[var(--shape-card)] bg-[var(--surface-primary)] p-4 sm:p-6">
+        <h3 className="m-0 text-lg font-semibold">Semantic badges</h3>
+        <div className="flex flex-wrap gap-2">
           <Badge>Draft</Badge>
           <Badge icon={<Info aria-hidden size={14} />} tone="accent">Selected</Badge>
           <Badge icon={<CheckCircle aria-hidden size={14} />} tone="success">Submitted</Badge>

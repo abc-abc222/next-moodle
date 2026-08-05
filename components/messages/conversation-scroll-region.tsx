@@ -9,15 +9,15 @@ type ConversationScrollRegionProps = Readonly<{
 
 const BOTTOM_THRESHOLD = 48;
 
+function scrollToBottom(viewport: HTMLDivElement): void {
+  viewport.scrollTop = viewport.scrollHeight;
+}
+
 export function ConversationScrollRegion({ children, messageCount }: ConversationScrollRegionProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(messageCount);
   const shouldStickToBottomRef = useRef(true);
   const initializedRef = useRef(false);
-
-  function scrollToBottom(viewport: HTMLDivElement): void {
-    viewport.scrollTop = viewport.scrollHeight;
-  }
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -53,7 +53,7 @@ export function ConversationScrollRegion({ children, messageCount }: Conversatio
 
   return (
     <div
-      className="ui-message-thread__scroll"
+      className="ui-message-thread__scroll h-full min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
       onScroll={(event) => {
         const viewport = event.currentTarget;
         shouldStickToBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= BOTTOM_THRESHOLD;

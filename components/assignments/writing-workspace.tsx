@@ -42,15 +42,15 @@ export function WritingWorkspace(props: WritingWorkspaceProps) {
     props.onChange(`${props.value.trimEnd()}${props.value.trim() === "" ? "" : "\n\n"}${paragraph}`);
   };
   return (
-    <div className="ui-writing-workspace">
+    <div className="ui-writing-workspace grid items-start gap-4">
       {props.format === 1 ? (
         <RichTextEditor disabled={props.disabled} initialContent={props.value} onChange={props.onChange} />
       ) : (
         <PlainWritingEditor disabled={props.disabled} maxLength={props.maxLength} onChange={props.onChange} value={props.value} />
       )}
       {props.aiAvailability.enabled ? (
-        <details className="ui-writing-utility">
-          <summary><Sparkle aria-hidden size={18} /><span>文章補助</span><small>任意</small></summary>
+        <details className="ui-writing-utility overflow-hidden rounded-[var(--shape-card)] bg-[var(--surface-inset)]">
+          <summary className="grid min-h-13 cursor-pointer list-none grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-4 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] [&::-webkit-details-marker]:hidden"><Sparkle aria-hidden className="text-[var(--accent-500)]" size={18} /><span>文章補助</span><small className="text-xs font-normal text-[var(--text-tertiary)]">任意</small></summary>
           <AiAssistPanel
             canUndo={previousValue !== null}
             cmid={props.cmid}

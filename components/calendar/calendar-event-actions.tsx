@@ -5,12 +5,13 @@ import ky, { isKyError } from "ky";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, Field } from "@/components/ui";
+import { Button, DialogSheet, Field, IconButton } from "@/components/ui";
 
 export function CalendarEventCreator() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [open, setOpen] = useState(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -32,6 +33,7 @@ export function CalendarEventCreator() {
         return;
       }
       formElement.reset();
+      setOpen(false);
       router.refresh();
     } catch (cause) {
       if (!isKyError(cause)) throw cause;
@@ -41,7 +43,7 @@ export function CalendarEventCreator() {
     }
   }
 
-  return <details className="ui-calendar-create"><summary><Plus aria-hidden size={17} />予定を追加</summary><form onSubmit={submit}><Field id="calendar-event-name" label="予定名" maxLength={200} name="name" required /><Field id="calendar-event-start" label="開始日時" name="startsAt" required type="datetime-local" /><Button disabled={pending} type="submit">{pending ? "追加中" : "追加"}</Button><span aria-live="polite">{error ? "予定を追加できませんでした。" : ""}</span></form></details>;
+  return <><Button icon={<Plus aria-hidden size={17} />} onClick={() => setOpen(true)} variant="secondary">予定を追加</Button><DialogSheet description="個人用の学習予定としてMoodleへ保存します。" label="予定" onOpenChange={setOpen} open={open} placement="center" title="予定を追加"><form className="grid gap-5" onSubmit={submit}><Field id="calendar-event-name" label="予定名" maxLength={200} name="name" required /><Field id="calendar-event-start" label="開始日時" name="startsAt" required type="datetime-local" /><div className="flex justify-end gap-2"><Button onClick={() => setOpen(false)} variant="ghost">キャンセル</Button><Button disabled={pending} loading={pending} type="submit" variant="primary">追加</Button></div><span aria-live="polite" className="text-xs text-[var(--status-error)]">{error ? "予定を追加できませんでした。" : ""}</span></form></DialogSheet></>;
 }
 
 export function CalendarEventDelete({ eventId }: Readonly<{ eventId: number }>) {
@@ -57,5 +59,5 @@ export function CalendarEventDelete({ eventId }: Readonly<{ eventId: number }>) 
       setPending(false);
     }
   }
-  return <button aria-label="予定を削除" className="ui-calendar-delete" disabled={pending} onClick={remove} type="button"><Trash aria-hidden size={16} /></button>;
+  return <IconButton aria-label="予定を削除" className="ui-calendar-delete" disabled={pending} icon={<Trash aria-hidden size={16} />} label="予定を削除" onClick={remove} variant="ghost" />;
 }

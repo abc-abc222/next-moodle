@@ -8,8 +8,7 @@ import { z } from "zod";
 
 import { TransitionLink } from "@/components/app-shell/transitions";
 import { PageFrame, RouteHeader } from "@/components/app-shell/workspace-frame";
-import { Button, Field, Notice, Textarea } from "@/components/ui";
-import "./messages.css";
+import { Button, Card, EmptyState, Field, Notice, StickyActionBar, Textarea } from "@/components/ui";
 
 const TeacherSchema = z.object({
   avatarUrl: z.string().nullable(),
@@ -155,80 +154,66 @@ export function TeacherContactForm({ courses, initialCourseId = null }: Readonly
   }
 
   const command = (
-    <div className="ui-teacher-compose__command">
-      <span>{status === "sending" ? "Moodleへ送信中…" : "入力は送信に成功するまで保持されます"}</span>
+    <StickyActionBar className="ui-teacher-compose__command rounded-none shadow-none">
+      <span className="mr-auto text-xs text-[var(--text-tertiary)]">{status === "sending" ? "Moodleへ送信中…" : "入力は送信に成功するまで保持されます"}</span>
       {reviewing ? (
-        <div><Button onClick={() => dispatch({ type: "review_changed", value: false })} type="button" variant="secondary">修正する</Button><Button disabled={status === "sending"} onClick={submit} type="button"><PaperPlaneRight aria-hidden size={18} />{status === "sending" ? "送信中" : "送信を確定"}</Button></div>
+        <div className="flex flex-wrap gap-2"><Button onClick={() => dispatch({ type: "review_changed", value: false })} type="button" variant="secondary">修正する</Button><Button disabled={status === "sending"} onClick={submit} type="button" variant="primary"><PaperPlaneRight aria-hidden size={18} />{status === "sending" ? "送信中" : "送信を確定"}</Button></div>
       ) : (
-        <Button disabled={recipientKey === "" || subject.trim() === "" || body.trim() === "" || status === "sending"} onClick={() => dispatch({ type: "review_changed", value: true })} type="button">送信内容を確認</Button>
+        <Button disabled={recipientKey === "" || subject.trim() === "" || body.trim() === "" || status === "sending"} onClick={() => dispatch({ type: "review_changed", value: true })} type="button" variant="primary">送信内容を確認</Button>
       )}
-    </div>
+    </StickyActionBar>
   );
 
   return (
     <PageFrame
       actions={command}
       className="ui-teacher-contact"
-      content={<section aria-label="先生への新規連絡" className="ui-teacher-compose" data-step="compose">
-        <header><div><h2>{selectedTeacher?.displayName ?? "担当者を選択"}</h2><p>{selectedCourse?.name ?? "コースを選択"}</p></div><ChalkboardTeacher aria-hidden size={22} /></header>
-        <div className="ui-teacher-compose__body">
-          <Field autoComplete="off" id="teacher-message-subject" label="件名" maxLength={200} onChange={(event) => dispatch({ type: "subject_changed", value: event.currentTarget.value })} placeholder="用件を簡潔に入力" value={subject} />
-          <Textarea label="本文" maxLength={10_000} onChange={(event) => dispatch({ type: "body_changed", value: event.currentTarget.value })} placeholder="所属・要件・希望する対応を具体的に入力してください" rows={12} value={body} />
-          {reviewing ? (
-            <section className="ui-teacher-review" aria-labelledby="teacher-review-title">
-              <header><CheckCircle aria-hidden size={20} /><div><h3 id="teacher-review-title">送信前の確認</h3><p>この内容でMoodle側の宛先を再検証します。</p></div></header>
-              <dl>
-                <div><dt>宛先</dt><dd>{selectedTeacher?.displayName ?? "未選択"}</dd></div>
-                <div><dt>コース</dt><dd>{selectedCourse?.name ?? "未選択"}</dd></div>
-                <div><dt>件名</dt><dd>{subject.trim()}</dd></div>
-                <div><dt>本文冒頭</dt><dd>{body.trim().slice(0, 120)}{body.trim().length > 120 ? "…" : ""}</dd></div>
-                <div><dt>再検証</dt><dd>受講関係 / 教員ロール / 受信可否</dd></div>
-              </dl>
-            </section>
-          ) : null}
-          <p className="ui-teacher-compose__error" aria-live="polite">{message}</p>
-        </div>
-      </section>}
-      context={<div className="ui-teacher-recipient-panel">
-        <nav aria-label="連絡作成の進行状況" className="ui-teacher-steps">
-        <button aria-current={step === "course" ? "step" : undefined} onClick={() => dispatch({ step: "course", type: "step_changed" })} type="button"><span>01</span>コース</button>
-        <button aria-current={step === "recipient" ? "step" : undefined} disabled={courseId === null} onClick={() => dispatch({ step: "recipient", type: "step_changed" })} type="button"><span>02</span>担当者</button>
-        <button aria-current={step === "compose" ? "step" : undefined} disabled={recipientKey === ""} onClick={() => dispatch({ step: "compose", type: "step_changed" })} type="button"><span>03</span>本文確認</button>
-        </nav>
-        <section className="ui-teacher-courses" data-step="course">
-          <header><h2>コース</h2><span>{courses.length}</span></header>
-          {courses.length === 0 ? <Notice title="受講コースがありません" tone="info"><p>コースへ参加すると、担当教員を選択できます。</p></Notice> : (
-            <nav aria-label="連絡するコース">
-              {courses.map((course) => (
-                <button aria-pressed={course.id === courseId} key={course.id} onClick={() => selectCourse(course.id)} type="button">
-                  <span>{course.shortName.slice(0, 1)}</span><span><strong>{course.name}</strong><small>{course.shortName}</small></span>
-                </button>
-              ))}
-            </nav>
-          )}
-        </section>
-        <section className="ui-teacher-recipient" data-step="recipient">
-          <header><h2>担当教員</h2><span>{loadingTeachers ? "確認中" : `${teachers.length}人`}</span></header>
-          <label className="ui-teacher-select">
-            <span>送信先</span>
-            <select
-              disabled={loadingTeachers || teachers.length === 0}
-              onChange={(event) => {
-                dispatch({ type: "recipient_selected", value: event.currentTarget.value });
-              }}
-              value={recipientKey}
-            >
-              <option value="">{loadingTeachers ? "確認中…" : "担当教員を選択"}</option>
-              {teachers.map((teacher) => <option disabled={!teacher.canMessage} key={teacher.recipientKey} value={teacher.recipientKey}>{teacher.displayName} — {teacher.roles.join(" / ")}</option>)}
-            </select>
-          </label>
-          <div className="ui-teacher-person"><span>{selectedTeacher?.displayName.slice(0, 1) ?? "?"}</span><div><strong>{selectedTeacher?.displayName ?? "未選択"}</strong><small>{selectedTeacher?.roles.join(" / ") ?? "担当教員を選択"}</small></div></div>
-          <div className="ui-teacher-safety"><ShieldCheck aria-hidden size={20} /><p>宛先IDはブラウザへ公開せず、送信直前に受講関係と教員ロールを再確認します。</p></div>
-        </section>
+      content={<div className="grid min-w-0 gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <aside className="grid content-start gap-5">
+          <Card className="ui-teacher-courses" padding="compact" tone="inset">
+            <header className="flex min-h-11 items-center justify-between gap-3 px-2"><h2 className="m-0 text-base font-semibold">1. コース</h2><span className="text-xs text-[var(--text-tertiary)]">{courses.length}</span></header>
+            {courses.length === 0 ? <EmptyState title="受講コースがありません">コースへ参加すると、担当教員を選択できます。</EmptyState> : (
+              <nav aria-label="連絡するコース" className="grid max-h-64 overflow-y-auto">
+                {courses.map((course) => (
+                  <button aria-pressed={course.id === courseId} className="grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-3 rounded-[var(--shape-control)] border-0 bg-transparent px-2 text-left text-[var(--text-primary)] transition-colors duration-[120ms] hover:bg-[var(--surface-elevated)] aria-pressed:bg-[var(--surface-selected)]" key={course.id} onClick={() => selectCourse(course.id)} type="button">
+                    <span className="grid size-10 place-items-center rounded-full bg-[var(--accent-500)] font-bold text-[var(--accent-contrast)]">{course.shortName.slice(0, 1)}</span><span className="grid min-w-0"><strong className="truncate">{course.name}</strong><small className="truncate text-xs text-[var(--text-tertiary)]">{course.shortName}</small></span>
+                  </button>
+                ))}
+              </nav>
+            )}
+          </Card>
+          <Card className="ui-teacher-recipient grid gap-4" padding="standard" tone="inset">
+            <header className="flex items-center justify-between gap-3"><h2 className="m-0 text-base font-semibold">2. 担当教員</h2><span className="text-xs text-[var(--text-tertiary)]">{loadingTeachers ? "確認中" : `${teachers.length}人`}</span></header>
+            <label className="ui-teacher-select grid gap-2 text-xs font-semibold">
+              <span>送信先</span>
+              <select className="min-h-11 w-full rounded-[var(--shape-control)] border-0 bg-[var(--surface-elevated)] px-3 shadow-[var(--shadow-control)]" disabled={loadingTeachers || teachers.length === 0} onChange={(event) => dispatch({ type: "recipient_selected", value: event.currentTarget.value })} value={recipientKey}>
+                <option value="">{loadingTeachers ? "確認中…" : "担当教員を選択"}</option>
+                {teachers.map((teacher) => <option disabled={!teacher.canMessage} key={teacher.recipientKey} value={teacher.recipientKey}>{teacher.displayName} — {teacher.roles.join(" / ")}</option>)}
+              </select>
+            </label>
+            <div className="ui-teacher-person grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-[var(--accent-500)] font-bold text-[var(--accent-contrast)]">{selectedTeacher?.displayName.slice(0, 1) ?? "?"}</span><div className="grid min-w-0"><strong className="truncate">{selectedTeacher?.displayName ?? "未選択"}</strong><small className="truncate text-xs text-[var(--text-tertiary)]">{selectedTeacher?.roles.join(" / ") ?? "担当教員を選択"}</small></div></div>
+            <div className="ui-teacher-safety grid grid-cols-[auto_minmax(0,1fr)] gap-2 text-[var(--accent-400)]"><ShieldCheck aria-hidden size={20} /><p className="m-0 text-xs leading-5 text-[var(--text-secondary)]">送信直前に受講関係と教員ロールを再確認します。</p></div>
+          </Card>
+        </aside>
+        <Card as="section" className="ui-teacher-compose" padding="spacious" tone="default">
+          <header className="mb-6 flex items-start justify-between gap-4"><div><h2 className="m-0 text-lg font-semibold">3. メッセージ</h2><p className="m-0 mt-1 text-sm text-[var(--text-secondary)]">{selectedTeacher?.displayName ?? "担当者を選択"} · {selectedCourse?.name ?? "コースを選択"}</p></div><ChalkboardTeacher aria-hidden className="text-[var(--accent-400)]" size={22} /></header>
+          <div className="ui-teacher-compose__body grid gap-5">
+            <Field autoComplete="off" id="teacher-message-subject" label="件名" maxLength={200} onChange={(event) => dispatch({ type: "subject_changed", value: event.currentTarget.value })} placeholder="用件を簡潔に入力" value={subject} />
+            <Textarea label="本文" maxLength={10_000} onChange={(event) => dispatch({ type: "body_changed", value: event.currentTarget.value })} placeholder="所属・要件・希望する対応を具体的に入力してください" rows={12} value={body} />
+            {reviewing ? (
+              <Card as="section" className="ui-teacher-review" padding="standard" tone="selected">
+                <header className="flex gap-3 text-[var(--accent-400)]"><CheckCircle aria-hidden className="shrink-0" size={20} /><div><h3 className="m-0 text-base text-[var(--text-primary)]" id="teacher-review-title">送信前の確認</h3><p className="m-0 mt-1 text-xs text-[var(--text-secondary)]">この内容でMoodle側の宛先を再検証します。</p></div></header>
+                <dl className="m-0 mt-4 grid divide-y divide-[var(--border-subtle)]">{[["宛先", selectedTeacher?.displayName ?? "未選択"], ["コース", selectedCourse?.name ?? "未選択"], ["件名", subject.trim()], ["本文冒頭", `${body.trim().slice(0, 120)}${body.trim().length > 120 ? "…" : ""}`], ["再検証", "受講関係 / 教員ロール / 受信可否"]].map(([label, value]) => <div className="grid min-h-11 grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 py-2 text-sm max-sm:grid-cols-1 max-sm:gap-1" key={label}><dt className="text-xs text-[var(--text-tertiary)]">{label}</dt><dd className="m-0 break-words">{value}</dd></div>)}</dl>
+              </Card>
+            ) : null}
+            {message === "" ? null : <Notice title="送信を完了できませんでした" tone="error" urgent>{message}</Notice>}
+          </div>
+        </Card>
       </div>}
       header={<RouteHeader actions={<TransitionLink className="ui-app-action-link" href="/messages" intent="return"><ArrowLeft aria-hidden size={18} />会話へ戻る</TransitionLink>} description="受講コースの担当教員へ、Moodleの個別メッセージを送ります。" eyebrow="新規メッセージ" title="先生へ連絡" />}
-      mode="conversation"
+      mode="focus"
       state={step}
+      width="wide"
     />
   );
 }

@@ -111,7 +111,7 @@ export function LoginForm() {
   const copy = loginError === null ? null : ERROR_COPY[loginError];
 
   return (
-    <form className="ui-login-form" noValidate onSubmit={submit}>
+    <form className="ui-login-form grid gap-4" noValidate onSubmit={submit}>
       <Field
         autoComplete="username"
         disabled={pending}
@@ -138,6 +138,7 @@ export function LoginForm() {
         </Notice>
       )}
       <Button
+        className="w-full"
         icon={<SignIn aria-hidden size={19} weight="regular" />}
         loading={pending}
         type="submit"
@@ -145,9 +146,9 @@ export function LoginForm() {
       >
         Moodleでログイン
       </Button>
-      <div className="ui-login-security">
-        <LockKey aria-hidden size={19} weight="regular" />
-        <p>
+      <div className="ui-login-security grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-[var(--shape-control)] bg-[var(--surface-inset)] p-3 text-sm text-[var(--text-secondary)]">
+        <LockKey aria-hidden className="mt-0.5 shrink-0" size={19} weight="regular" />
+        <p className="m-0 leading-6">
           認証情報は設定済みのMoodleへサーバー経由で送信され、保存されません。
           発行されたセッションは暗号化されたHttpOnly Cookieで保護されます。
         </p>

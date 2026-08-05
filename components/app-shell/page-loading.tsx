@@ -7,15 +7,15 @@ export function PageLoading({ label }: Readonly<{ label: string }>) {
     <RevealTransition>
       <PageFrame
         content={(
-          <div aria-busy="true" aria-label={label} className="ui-page-stack" role="status">
-            <span className="ui-sr-only">{label}</span>
-            <div className="ui-page-grid">
-              <Surface><Skeleton className="ui-page-loading__panel" /></Surface>
-              <Surface><Skeleton className="ui-page-loading__panel" /></Surface>
+          <div aria-busy="true" aria-label={label} className="ui-page-stack grid gap-5" role="status">
+            <span className="sr-only">{label}</span>
+            <div className="ui-page-grid grid gap-4 md:grid-cols-2">
+              <Surface><Skeleton className="ui-page-loading__panel h-56 w-full" /></Surface>
+              <Surface><Skeleton className="ui-page-loading__panel h-56 w-full" /></Surface>
             </div>
           </div>
         )}
-        header={<div aria-hidden className="ui-page-loading__heading"><Skeleton className="ui-page-loading__title" /><Skeleton className="ui-page-loading__copy" /></div>}
+        header={<div aria-hidden className="ui-page-loading__heading grid max-w-xl gap-3"><Skeleton className="ui-page-loading__title h-9 w-3/5" /><Skeleton className="ui-page-loading__copy h-4 w-4/5" /></div>}
         mode="overview"
       />
     </RevealTransition>
