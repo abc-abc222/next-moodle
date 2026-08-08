@@ -98,7 +98,7 @@ export function DialogSheet({
           <m.div
             animate={{ opacity: 1 }}
             aria-hidden
-            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+            className="pointer-events-none absolute inset-0 bg-black/55 backdrop-blur-[2px]"
             exit={{ opacity: 0 }}
             initial={{ opacity: 0 }}
             transition={{ duration }}

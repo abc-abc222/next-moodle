@@ -85,6 +85,12 @@ test("context panels persist locally and inspector sheets restore keyboard focus
   const inspectorTrigger = page.getByRole("button", { name: "コース情報" });
   await inspectorTrigger.click();
   await expect(page.getByRole("dialog", { name: "コース情報" })).toBeVisible();
+  await page.mouse.click(24, 24);
+  await expect(page.getByRole("dialog", { name: "コース情報" })).not.toBeVisible();
+  await expect(inspectorTrigger).toBeFocused();
+
+  await inspectorTrigger.click();
+  await expect(page.getByRole("dialog", { name: "コース情報" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "コース情報" })).not.toBeVisible();
   await expect(inspectorTrigger).toBeFocused();
