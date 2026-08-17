@@ -19,7 +19,7 @@ const ROUTES = [
   { heading: "プライベートファイル", name: "files", path: "/files" },
   { heading: "メッセージ", name: "messages-index", path: "/messages" },
   { heading: "Study group", name: "messages", path: "/messages/1001" },
-  { heading: "先生へ連絡", name: "teacher-contact", path: "/messages/new?courseId=101" },
+  { heading: "新しいメッセージ", name: "teacher-contact", path: "/messages/new?courseId=101" },
   { heading: "PDFツール", name: "pdf", path: "/tools/pdf" },
 ] as const;
 

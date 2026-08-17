@@ -18,6 +18,10 @@ export type CourseTeacherCandidate = Readonly<{
   roles: readonly string[];
 }>;
 
+export type CourseMessageCandidate = CourseTeacherCandidate & Readonly<{
+  kind: "teacher" | "student";
+}>;
+
 type ReadCourseTeachersInput = Readonly<{
   courseId: MoodleCourseId;
   roleShortnames: readonly string[];
@@ -25,9 +29,9 @@ type ReadCourseTeachersInput = Readonly<{
   viewerId: MoodleUserId;
 }>;
 
-export async function readCourseTeacherCandidates(
+export async function readCourseMessageCandidates(
   input: ReadCourseTeachersInput,
-): Promise<MoodleReadResult<readonly CourseTeacherCandidate[]>> {
+): Promise<MoodleReadResult<readonly CourseMessageCandidate[]>> {
   try {
     const client = await createAuthenticatedMoodleClient();
     const enrolled = await client.call(
@@ -48,11 +52,15 @@ export async function readCourseTeacherCandidates(
     const acceptedRoles = new Set(input.roleShortnames);
     return {
       kind: "ready",
-      data: response.data.flatMap((person): readonly CourseTeacherCandidate[] => {
-        const roles = person.roles
+      data: response.data.flatMap((person): readonly CourseMessageCandidate[] => {
+        if (person.id === input.viewerId) return [];
+        const allRoles = person.roles.map((role) => role.name).filter((role) => role.trim() !== "");
+        const teacherRoles = person.roles
           .filter((role) => acceptedRoles.has(role.shortname))
-          .map((role) => role.name);
-        if (roles.length === 0 || person.id === input.viewerId) return [];
+          .map((role) => role.name)
+          .filter((role) => role.trim() !== "");
+        if (allRoles.length === 0) return [];
+        const isTeacher = teacherRoles.length > 0;
         const avatarUrl = person.profileimageurlsmall === undefined
           ? null
           : moodleFileProxyPath(person.profileimageurlsmall, input.siteUrl);
@@ -60,11 +68,30 @@ export async function readCourseTeacherCandidates(
           avatarUrl,
           displayName: person.fullname,
           id: person.id as MoodleUserId,
-          roles,
+          kind: isTeacher ? "teacher" : "student",
+          roles: isTeacher ? teacherRoles : allRoles,
         }];
       }),
     };
   } catch (error) {
     return toMoodleReadFailure(error);
   }
+}
+
+export async function readCourseTeacherCandidates(
+  input: ReadCourseTeachersInput,
+): Promise<MoodleReadResult<readonly CourseTeacherCandidate[]>> {
+  const candidates = await readCourseMessageCandidates(input);
+  if (candidates.kind === "failure") return candidates;
+  return {
+    kind: "ready",
+    data: candidates.data
+      .filter((candidate) => candidate.kind === "teacher")
+      .map((candidate) => ({
+        avatarUrl: candidate.avatarUrl,
+        displayName: candidate.displayName,
+        id: candidate.id,
+        roles: candidate.roles,
+      })),
+  };
 }

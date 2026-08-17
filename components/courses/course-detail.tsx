@@ -83,7 +83,7 @@ export function CourseDetail({ config, data }: Readonly<{
         <div className="flex justify-between gap-4 py-3"><dt className="text-sm text-[var(--text-secondary)]">利用制限</dt><dd className="m-0 text-sm">{restricted}</dd></div>
       </dl>
       <TransitionLink className="ui-app-action-link" href="/grades" intent="switch">成績を確認</TransitionLink>
-      <TransitionLink className="ui-app-action-link" href={`/messages/new?courseId=${data.course.id}`} intent="drill-in">担当教員へ連絡</TransitionLink>
+      <TransitionLink className="ui-app-action-link" href={`/messages/new?courseId=${data.course.id}`} intent="drill-in">メッセージを送る</TransitionLink>
     </div>
   );
 
@@ -152,7 +152,7 @@ export function CourseDetail({ config, data }: Readonly<{
       )}
       header={(
         <RouteHeader
-          actions={<InspectorSheet description="進捗、成績、担当教員への連絡" label={<><Info aria-hidden size={17} />コース情報</>} title="コース情報">{inspector}</InspectorSheet>}
+          actions={<InspectorSheet description="進捗、成績、参加者へのメッセージ" label={<><Info aria-hidden size={17} />コース情報</>} title="コース情報">{inspector}</InspectorSheet>}
           eyebrow={<><TransitionLink href="/courses" intent="return">コース</TransitionLink><span> / {data.course.shortName}</span></>}
           metadata={`${activities.length} activities`}
           shared={{ identifier: data.course.id, kind: "course" }}

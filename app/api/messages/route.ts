@@ -7,7 +7,7 @@ import { MoodleCourseIdSchema } from "@/lib/moodle/model";
 import { withDirectMessageLock } from "@/lib/moodle/messages/direct-message-lock";
 import { readTeacherRoleShortnames } from "@/lib/moodle/messages/teacher-config";
 import { openTeacherRecipientKey } from "@/lib/moodle/messages/teacher-recipient";
-import { readCourseTeacherCandidates } from "@/lib/moodle/messages/teachers";
+import { readCourseMessageCandidates } from "@/lib/moodle/messages/teachers";
 import { currentUnixSeconds } from "@/lib/moodle/now";
 import { ConversationSchema } from "@/lib/moodle/student-dto";
 
@@ -18,7 +18,6 @@ const InputSchema = z.object({
   clientRequestId: z.uuid(),
   courseId: MoodleCourseIdSchema,
   recipientKey: z.string().min(20).max(2_048),
-  subject: z.string().trim().min(1).max(200),
 });
 const SendResponseSchema = z.array(z.object({
   errormessage: z.string().nullish(),
@@ -45,20 +44,20 @@ export async function POST(request: Request): Promise<Response> {
       viewerId: session.userId,
     });
     if (recipient === null) return Response.json({ ok: false, error: { code: "recipient_expired" } }, { status: 400 });
-    const teachers = await readCourseTeacherCandidates({
+    const recipients = await readCourseMessageCandidates({
       courseId: input.data.courseId,
       roleShortnames: readTeacherRoleShortnames(),
       siteUrl: session.site.siteUrl,
       viewerId: session.userId,
     });
-    if (teachers.kind === "failure") return Response.json({ ok: false, error: { code: teachers.reason } }, { status: teachers.reason === "permission" ? 403 : 503 });
-    if (!teachers.data.some((teacher) => teacher.id === recipient.recipientId)) return Response.json({ ok: false, error: { code: "recipient_not_allowed" } }, { status: 403 });
+    if (recipients.kind === "failure") return Response.json({ ok: false, error: { code: recipients.reason } }, { status: recipients.reason === "permission" ? 403 : 503 });
+    if (!recipients.data.some((candidate) => candidate.id === recipient.recipientId)) return Response.json({ ok: false, error: { code: "recipient_not_allowed" } }, { status: 403 });
 
     const result = await withDirectMessageLock(`${session.userId}:${input.data.clientRequestId}`, async () => {
       const client = await createAuthenticatedMoodleClient();
       const message = await client.call(MOODLE_FUNCTIONS.sendMessages, {
         "messages[0][touserid]": recipient.recipientId,
-        "messages[0][text]": `件名: ${input.data.subject}\n\n${input.data.body}`,
+        "messages[0][text]": input.data.body,
         "messages[0][textformat]": 2,
       }, SendResponseSchema);
       const sent = message.data[0];

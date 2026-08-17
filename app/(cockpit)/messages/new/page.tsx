@@ -7,17 +7,17 @@ import { requireMoodleSession } from "@/lib/auth/server";
 import { currentUnixSeconds } from "@/lib/moodle/now";
 import { readCourses } from "@/lib/moodle/queries/courses";
 
-export const metadata: Metadata = { title: "先生へ連絡" };
+export const metadata: Metadata = { title: "新しいメッセージ" };
 
 export default async function NewTeacherMessagePage({ searchParams }: Readonly<{
   searchParams: Promise<{ courseId?: string | string[] }>;
 }>) {
   const session = await requireMoodleSession();
   if (session.manifest.features.people !== "available" || session.manifest.operations["message.sendDirect"] !== "available") {
-    return <PageFrame content={<StateNotice reason="capability" retryHref="/messages/new" siteUrl={session.site.siteUrl} />} header={<RouteHeader description="受講コースの担当教員へ個別メッセージを送ります。" eyebrow="新規メッセージ" title="先生へ連絡" />} mode="focus" />;
+    return <PageFrame content={<StateNotice reason="capability" retryHref="/messages/new" siteUrl={session.site.siteUrl} />} header={<RouteHeader description="受講コースの先生や学生と個別メッセージを始めます。" eyebrow="新規メッセージ" title="新しいメッセージ" />} mode="focus" />;
   }
   const courses = await readCourses(session.userId, currentUnixSeconds());
-  if (courses.kind === "failure") return <PageFrame content={<StateNotice reason={resolveMoodlePageFailure(courses.reason)} retryHref="/messages/new" siteUrl={session.site.siteUrl} />} header={<RouteHeader description="受講コースの担当教員へ個別メッセージを送ります。" eyebrow="新規メッセージ" title="先生へ連絡" />} mode="focus" />;
+  if (courses.kind === "failure") return <PageFrame content={<StateNotice reason={resolveMoodlePageFailure(courses.reason)} retryHref="/messages/new" siteUrl={session.site.siteUrl} />} header={<RouteHeader description="受講コースの先生や学生と個別メッセージを始めます。" eyebrow="新規メッセージ" title="新しいメッセージ" />} mode="focus" />;
   const courseIdParam = (await searchParams).courseId;
   const initialCourseId = typeof courseIdParam === "string" && /^\d+$/.test(courseIdParam)
     ? Number(courseIdParam)

@@ -42,18 +42,20 @@ export function ContextPanel({ children, count, mobileAlwaysOpen = false, storag
     window.dispatchEvent(new Event(STORAGE_EVENT));
   };
 
+  const panelId = `context-panel-${storageKey}`;
+
   return (
-    <div className="ui-context-panel grid h-full min-h-0 w-full min-w-0 grid-rows-[auto_minmax(0,1fr)]" data-collapsed={collapsed} data-mobile-always-open={mobileAlwaysOpen ? "true" : undefined} data-storage-key={contextPanelStorageKey(storageKey)}>
+    <div className="ui-context-panel grid h-full min-h-0 w-full min-w-0 grid-rows-[auto_minmax(0,1fr)]" data-collapsed={collapsed} data-mobile-always-open={mobileAlwaysOpen ? "true" : undefined} data-storage-key={contextPanelStorageKey(storageKey)} id={panelId}>
       <header className={classNames("ui-context-panel__header flex min-h-14 items-center justify-between gap-3 px-4", collapsed && "justify-center px-2")}>
         <div className={classNames("ui-context-panel__heading flex min-w-0 items-baseline gap-2", collapsed && "hidden")}>
           <h2 className="m-0 truncate text-base font-semibold">{title}</h2>
           {count === undefined ? null : <span className="font-mono text-xs text-[var(--text-tertiary)]">{count}</span>}
         </div>
-        <button className="grid size-11 shrink-0 place-items-center rounded-[var(--shape-control)] border-0 bg-transparent text-[var(--text-secondary)] transition-colors duration-[120ms] hover:bg-[var(--surface-elevated)] hover:text-[var(--text-primary)]" aria-expanded={!collapsed} aria-label={collapsed ? "文脈パネルを開く" : "文脈パネルを閉じる"} onClick={toggle} type="button">
+        <button aria-controls={`${panelId}-body`} aria-expanded={!collapsed} className="grid size-11 shrink-0 place-items-center rounded-[var(--shape-control)] border-0 bg-transparent text-[var(--text-secondary)] transition-colors duration-[120ms] hover:bg-[var(--surface-elevated)] hover:text-[var(--text-primary)]" aria-label={collapsed ? "文脈パネルを開く" : "文脈パネルを閉じる"} onClick={toggle} type="button">
           <CaretLeft aria-hidden className={classNames("transition-transform duration-[180ms] motion-reduce:transition-none", collapsed && "rotate-180")} size={17} />
         </button>
       </header>
-      <div className={classNames("ui-context-panel__body min-h-0 w-full min-w-0 overflow-y-auto", collapsed && "hidden")}>{children}</div>
+      <div className={classNames("ui-context-panel__body min-h-0 w-full min-w-0 overflow-y-auto", collapsed && "hidden")} id={`${panelId}-body`}>{children}</div>
     </div>
   );
 }

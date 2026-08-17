@@ -193,6 +193,33 @@ select:disabled { cursor: not-allowed; }
   scrollbar-width: thin;
 }
 
+/* Keep context panels predictable when the collapse control is used with a
+   mouse, touchpad, or Windows keyboard navigation. The grid column follows
+   the panel state instead of leaving a blank 18rem gutter behind. */
+@media (min-width: 768px) {
+  .ui-page-frame[data-mode="conversation"]:has(.ui-context-panel[data-collapsed="true"]) {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+
+  .ui-page-frame[data-mode="conversation"]:has(.ui-context-panel[data-collapsed="true"]) > .ui-page-frame__context {
+    width: 4rem;
+    min-width: 4rem;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ui-page-frame[data-mode="browse"]:has(.ui-context-panel[data-collapsed="true"]) {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+
+  .ui-page-frame[data-mode="browse"]:has(.ui-context-panel[data-collapsed="true"]) > .ui-page-frame__context {
+    width: 4rem;
+    min-width: 4rem;
+    overflow: hidden;
+  }
+}
+
 ::selection {
   background: var(--accent-soft);
   color: var(--text-primary);

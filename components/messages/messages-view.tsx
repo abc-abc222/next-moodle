@@ -43,12 +43,11 @@ function ConversationContext({ conversations, selectedId }: Readonly<{
   return (
     <ContextPanel
       count={conversations.length}
-      mobileAlwaysOpen
       storageKey="messages"
-      title={<span className="ui-conversation-context-title flex min-w-0 items-center gap-2">会話<TransitionLink aria-label="先生へ新規連絡" className="ui-messages-new grid size-11 shrink-0 place-items-center rounded-[var(--shape-control)] text-[var(--accent-400)] hover:bg-[var(--surface-elevated)]" href="/messages/new" intent="drill-in"><PencilSimpleLine aria-hidden size={18} /></TransitionLink></span>}
+      title={<span className="ui-conversation-context-title flex min-w-0 items-center gap-2">会話<TransitionLink aria-label="新しいメッセージ" className="ui-messages-new grid size-11 shrink-0 place-items-center rounded-[var(--shape-control)] text-[var(--accent-400)] hover:bg-[var(--surface-elevated)]" href="/messages/new" intent="drill-in"><PencilSimpleLine aria-hidden size={18} /></TransitionLink></span>}
     >
       {conversations.length === 0 ? (
-        <div className="ui-pane-body p-3"><EmptyState icon={<ChatCircleDots aria-hidden size={20} />} title="会話はありません">新規連絡から担当教員へメッセージを送れます。</EmptyState></div>
+        <div className="ui-pane-body p-3"><EmptyState icon={<ChatCircleDots aria-hidden size={20} />} title="会話はありません">新しいメッセージから先生や学生と会話を始められます。</EmptyState></div>
       ) : <ConversationList conversations={conversations} selectedId={selectedId} />}
     </ContextPanel>
   );
@@ -68,7 +67,7 @@ export function MessagesIndex({ conversations }: Readonly<{ conversations: reado
     <PageFrame
       className="ui-messages-index-frame"
       content={(
-        <EmptyState className="mx-auto min-h-[22rem] max-w-xl" action={<TransitionLink className="ui-app-action-link" href="/messages/new" intent="drill-in"><PencilSimpleLine aria-hidden size={17} />先生へ連絡</TransitionLink>} icon={<ChatCircleDots aria-hidden size={26} />} title="会話を選択">一覧からスレッドを開くか、担当教員へ新しい連絡を作成してください。</EmptyState>
+        <EmptyState className="mx-auto min-h-[22rem] max-w-xl" action={<TransitionLink className="ui-app-action-link" href="/messages/new" intent="drill-in"><PencilSimpleLine aria-hidden size={17} />新しいメッセージ</TransitionLink>} icon={<ChatCircleDots aria-hidden size={26} />} title="会話を選択">一覧からスレッドを開くか、先生や学生との新しい会話を作成してください。</EmptyState>
       )}
       context={<ConversationContext conversations={conversations} />}
       header={<RouteHeader description="授業に関する連絡と返信を、会話ごとに確認します。" eyebrow="COMMUNICATION" title="メッセージ" />}

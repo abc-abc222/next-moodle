@@ -352,10 +352,9 @@ test("API 非対応 Questionnaire is parsed, submitted, and reported inside the 
   await expect(page).toHaveURL(/\/activities\/9198$/);
 
   await page.goto("/messages/new?courseId=101");
-  await expect(page.getByRole("heading", { name: "先生へ連絡" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "新しいメッセージ" })).toBeVisible();
   await expect(page.getByLabel("送信先")).toContainText("Aoi Mentor");
-  await page.getByLabel("件名").fill("Field session question");
-  await page.getByLabel("本文").fill("Could you confirm the observation meeting time?");
+  await page.getByLabel("メッセージ").fill("Could you confirm the observation meeting time?");
   await page.getByRole("button", { name: "送信内容を確認" }).click();
   await expect(page.getByRole("heading", { name: "送信前の確認" })).toBeVisible();
   await page.getByRole("button", { name: "送信を確定" }).click();
@@ -363,7 +362,6 @@ test("API 非対応 Questionnaire is parsed, submitted, and reported inside the 
   await expect(page.getByText("The next study session starts at 16:00.", { exact: true })).toBeVisible();
   await expect(page.locator(".ui-message-thread")).not.toContainText("<p>");
   const sentMessage = page.getByRole("main").locator(".ui-message-thread__scroll > ol li[data-own='true'] p");
-  await expect(sentMessage).toContainText("件名: Field session question");
   await expect(sentMessage).toContainText("Could you confirm the observation meeting time?");
   await page.getByLabel("メッセージ").fill("Thanks, I will be there.");
   await page.getByRole("button", { name: "送信" }).click();
