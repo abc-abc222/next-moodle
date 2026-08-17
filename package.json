@@ -33,7 +33,7 @@
     "postcss": "^8.5.23",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "sanitize-html": "^2.17.6",
+    "sanitize-html": "^2.17.7",
     "server-only": "^0.0.1",
     "zod": "^4.4.3"
   },
